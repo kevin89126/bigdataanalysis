@@ -12,5 +12,5 @@ ssh root@140.119.24.202 -p 32337
 
 ## Clone code from Github
 ```
-https://github.com/kevin89126/bigdataanalysis.git
+git clone https://github.com/kevin89126/bigdataanalysis.git
 ```
