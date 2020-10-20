@@ -1,3 +1,6 @@
+import os
+
+
 def handle_date(date):
     try:
         date = date.split('.')
@@ -13,3 +16,8 @@ def handle_date(date):
         raise
     print(_y, _m, _d)
     return _y, _m, _d
+
+
+def is_file(path):
+    return os.path.exists(path)
+
