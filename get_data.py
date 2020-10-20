@@ -3,23 +3,25 @@ import requests
 import pandas_datareader as pdr
 from datetime import datetime
 from bs4 import BeautifulSoup
+from utils import handle_date
 
 
-def get_sp500():
-    sd = datetime(2020, 1, 1)
-    ed = datetime(2020, 9, 4)
-
-    vix = pdr.get_data_yahoo(symbols='^vix', start=sd, end=ed)["Adj Close"]
-    spx = pdr.get_data_yahoo(symbols='^SP500TR', start=sd, end=ed)["Adj Close"]
-    vfx = pdr.get_data_yahoo(symbols='VFINX', start=sd, end=ed)["Adj Close"]
-    vbx = pdr.get_data_yahoo(symbols='VBMFX', start=sd, end=ed)["Adj Close"]
-    rom = pdr.get_data_yahoo(symbols='ROMO', start=sd, end=ed)["Adj Close"]
-    vmt = pdr.get_data_yahoo(symbols='VMOT', start=sd, end=ed)["Adj Close"]
-
-    bnp = pandas.concat([vix ,vfx ,vbx ,rom, vmt, spx], axis=1)
+def get_sp500(start_date, end_date):
+    s_y, s_m, s_d = handle_date(start_date)
+    e_y, e_m, e_d = handle_date(end_date)
+    sd = datetime(s_y, s_m, s_d)
+    ed = datetime(e_y, e_m, e_d)
+    stock_list = ['^vix', '^SP500TR', 'VFINX', 'VBMFX', 'ROMO', 'VMOT']
+    concat_list = []
+    for stock in stock_list:
+        print(stock)
+        res = pdr.get_data_yahoo(symbols=stock, start=sd, end=ed)["Adj Close"]
+        concat_list.append(res)
+    print(concat_list)
+    bnp = pandas.concat(concat_list, axis=1)
     bnp = bnp.sort_values(by="Date",ascending=False)
     bnp.head(80)
-    bnp.to_csv('Result.csv')
+    bnp.to_csv('Result_{0}_{1}.csv'.format(start_date, end_date))
 
 def get_rate():
     dfs = pandas.read_html('https://rate.bot.com.tw/xrt/quote/l6m/JPY')
@@ -41,3 +43,6 @@ def get_news():
     newsdf = pandas.DataFrame(newsary)
     newsdf.head()
     print(newsdf)
+
+if __name__ == "__main__":
+    get_sp500('1990.1.1','2020.10.20')
