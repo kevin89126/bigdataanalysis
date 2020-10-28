@@ -1,2 +1,4 @@
 pandas_datareader
 findspark
+keras
+tensorflow
