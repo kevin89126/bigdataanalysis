@@ -2,3 +2,4 @@ pandas_datareader
 findspark
 keras
 tensorflow
+statsmodels
