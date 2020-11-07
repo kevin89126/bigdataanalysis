@@ -6,15 +6,20 @@ from bs4 import BeautifulSoup
 from utils import handle_date
 
 
-def get_sp500(start_date, end_date, res_path,stock_list=['^vix', '^SP500TR', 'VFINX', 'VBMFX', 'ROMO', 'VMOT'], columns=()):
+def get_sp500(start_date, end_date, res_path,stock_list=[], columns=()):
     s_y, s_m, s_d = handle_date(start_date)
     e_y, e_m, e_d = handle_date(end_date)
     sd = datetime(s_y, s_m, s_d)
     ed = datetime(e_y, e_m, e_d)
     concat_list = []
+    print(stock_list)
     for stock in stock_list:
-        res = pdr.get_data_yahoo(symbols=stock, start=sd, end=ed)["Adj Close"]
-        concat_list.append(res)
+        try:
+            res = pdr.get_data_yahoo(symbols=stock, start=sd, end=ed)["Adj Close"]
+            concat_list.append(res)
+        except Exception as e:
+            print('[ERROR] {0} {1}'.format(stock, str(e)))
+            pass
     bnp = pandas.concat(concat_list, axis=1)
     bnp = bnp.sort_values(by="Date",ascending=False)
     bnp.head(80)
@@ -43,5 +48,6 @@ def get_news():
     newsdf.head()
     print(newsdf)
 
-#if __name__ == "__main__":
-#    get_sp500('1990.1.1','2020.10.20')
+if __name__ == "__main__":
+    stock_list = ['VFINX','^SP500TR','VMOT','RWM','DOG','SH','GLD','USO']
+    get_sp500('2018.9.30','2019.8.31','TEST.csv',stock_list=stock_list)
