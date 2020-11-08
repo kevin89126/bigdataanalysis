@@ -21,7 +21,7 @@ def get_sp500(start_date, end_date, res_path,stock_list=[], columns=()):
             print('[ERROR] {0} {1}'.format(stock, str(e)))
             pass
     bnp = pandas.concat(concat_list, axis=1)
-    bnp = bnp.sort_values(by="Date",ascending=False)
+    bnp = bnp.sort_values(by="Date",ascending=True)
     bnp.head(80)
     if columns:
         bnp.columns = columns
@@ -50,4 +50,4 @@ def get_news():
 
 if __name__ == "__main__":
     stock_list = ['VFINX','^SP500TR','VMOT','RWM','DOG','SH','GLD','USO']
-    get_sp500('2018.9.30','2019.8.31','TEST.csv',stock_list=stock_list)
+    get_sp500('2019.9.27','2020.9.30','PRED.csv',stock_list=stock_list)
