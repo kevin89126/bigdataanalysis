@@ -3,3 +3,4 @@ findspark
 keras
 tensorflow
 statsmodels
+RegscorePy
