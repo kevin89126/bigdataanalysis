@@ -1,4 +1,7 @@
 import pandas
+from keras.layers import concatenate
+import numpy
+from math import sqrt
 def read_csv(filename,folder):
     folder=folder+"/"+filename+".csv"
     return pandas.read_csv(folder,encoding='ISO-8859-1')
@@ -9,7 +12,7 @@ data.columns = ( 'DATE','vfx','vix' ,'vbx', 'vmt','rwm','dog','psh','spx')
 data = data.fillna(method='ffill')
 data.head()
 
-plot_data(data,groups=list(range(1,9)))
+#plot_data(data,groups=list(range(1,9)))
 data.describe()
 
 import statsmodels.api as sm
@@ -22,6 +25,11 @@ def Standard_MinMax(data):
     sc = MinMaxScaler(feature_range = (0, 1))
     
     return sc.fit_transform(data.reshape(-1,1))
+
+del data['DATE']
+scaler = MinMaxScaler(feature_range=(0, 1))
+scaled = scaler.fit_transform(data)
+data.head()
 
 def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 	n_vars = 1 if type(data) is list else data.shape[1]
@@ -80,12 +88,12 @@ history = model.fit(train_X, train_y, epochs=80,
                     batch_size=72, validation_data=(test_X, test_y), 
                     verbose=1, shuffle=False)
 
-%pylab inline
-from matplotlib import pyplot
-pyplot.plot(history.history['loss'], label='train')
-pyplot.plot(history.history['val_loss'], label='test')
-pyplot.legend()
-pyplot.show()
+#%pylab inline
+#from matplotlib import pyplot
+#pyplot.plot(history.history['loss'], label='train')
+#pyplot.plot(history.history['val_loss'], label='test')
+#pyplot.legend()
+#pyplot.show()
 
 folder="/nfs/Workspace/"
 pred_data=read_csv(filename="PRED",folder=folder)
@@ -136,15 +144,15 @@ from RegscorePy import *
 aic.aic(inv_y, pred_inv_yhat, 367)
 
 
-import matplotlib.pyplot as plt
-plt.figure(figsize=(20,10))
-plt.plot(inv_y, color = 'red', label = 'Real')
-plt.plot(pred_inv_yhat, color = 'blue', label = 'Predict')
-plt.title('Real vs Predict')
-plt.xlabel('Time')
-plt.ylabel('Price')
-plt.legend()
-plt.show()
+#import matplotlib.pyplot as plt
+#plt.figure(figsize=(20,10))
+#plt.plot(inv_y, color = 'red', label = 'Real')
+#plt.plot(pred_inv_yhat, color = 'blue', label = 'Predict')
+#plt.title('Real vs Predict')
+#plt.xlabel('Time')
+#plt.ylabel('Price')
+#plt.legend()
+#plt.show()
 result_pred = pandas.DataFrame(pred_inv_yhat,columns =['VFNIX'])
 temp =read_csv(filename="PRED",folder=folder)
 temp = temp['Date']
