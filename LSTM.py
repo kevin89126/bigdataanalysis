@@ -2,6 +2,8 @@ import pandas
 from keras.layers import concatenate
 import numpy
 from math import sqrt
+from keras.callbacks import EarlyStopping
+
 def read_csv(filename,folder):
     folder=folder+"/"+filename+".csv"
     return pandas.read_csv(folder,encoding='ISO-8859-1')
@@ -84,8 +86,11 @@ model.add(layers.Dense(1))
 model.compile(loss='mse', optimizer='adam')
 model.summary()
 
+#callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
+#model.fit(X_train, Y_train, epochs=1000, batch_size=128, validation_data=(X_val, Y_val), callbacks=[callback])
+
 history = model.fit(train_X, train_y, epochs=80, 
-                    batch_size=72, validation_data=(test_X, test_y), 
+                 validation_data=(test_X, test_y),
                     verbose=1, shuffle=False)
 
 #%pylab inline
