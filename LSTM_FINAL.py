@@ -23,6 +23,7 @@ def Standard_MinMax(data):
     
     return sc.fit_transform(data.reshape(-1,1))
 
+
 def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
     n_vars = 1 if type(data) is list else data.shape[1]
     df = pandas.DataFrame(data)
@@ -85,9 +86,9 @@ def get_train_test_data(reframed, train_p=0.8):
     return train_X, train_y, test_X, test_y
 
 
-def train_model(tn_X, tn_y, tt_X, tt_y):
+def train_model(train_X, train_y, test_X, test_y):
     model = keras.models.Sequential()
-    model.add(layers.LSTM(8, input_shape=(tn_X.shape[1], tn_X.shape[2])))
+    model.add(layers.LSTM(8, input_shape=(train_X.shape[1], train_X.shape[2])))
     model.add(layers.Dense(1))
     #model.add(Dropout(0.5))
     model.compile(loss='mse', optimizer='adam')
@@ -96,27 +97,26 @@ def train_model(tn_X, tn_y, tt_X, tt_y):
     #callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
     #model.fit(X_train, Y_train, epochs=1000, batch_size=128, validation_data=(X_val, Y_val), callbacks=[callback])
 
-    #print(test_X, test_y)
-    history = model.fit(tn_X, tn_y, epochs=80,
-                    batch_size=9, validation_data=(tt_X, tt_y),
-                    verbose=1, shuffle=False)
+    history = model.fit(train_X, train_y, epochs=80, 
+                     validation_data=(test_X, test_y),
+                        verbose=1, shuffle=False)
     return model
 
 
 
-def model_predict(scaler, model, ptt_X, ptt_y):
-    pred_yhat = model.predict(ptt_X)
-    ptt_X = ptt_X.reshape((ptt_X.shape[0], ptt_X.shape[2]))
-    pred_yhat.shape, ptt_X.shape
+def model_predict(scaler, model, pred_test_X, pred_test_y):
+    pred_yhat = model.predict(pred_test_X)
+    pred_test_X = pred_test_X.reshape((pred_test_X.shape[0], pred_test_X.shape[2]))
+    pred_yhat.shape, pred_test_X.shape
 
     pred = {'VFINX': 0}
-    pred_inv_yhat = concatenate((pred_yhat, numpy.delete(ptt_X, pred['VFINX'], axis=1)), axis=1)
+    pred_inv_yhat = concatenate((pred_yhat, numpy.delete(pred_test_X, pred['VFINX'], axis=1)), axis=1)
     pred_inv_yhat = scaler.inverse_transform(pred_inv_yhat)
     pred_inv_yhat = pred_inv_yhat[:,0]
     #pred_inv_yhat.shape,pred_inv_yhat
 
-    real = ptt_y.reshape((len(ptt_y), 1))
-    inv_y = concatenate((real, numpy.delete(ptt_X, pred['VFINX'], axis=1)), axis=1)
+    real = pred_test_y.reshape((len(pred_test_y), 1))
+    inv_y = concatenate((real, numpy.delete(pred_test_X, pred['VFINX'], axis=1)), axis=1)
     inv_y = scaler.inverse_transform(inv_y)
     inv_y = inv_y[:,0]
     #inv_y
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     pred_scaler, pred_reframed = get_data("FINAL_PRED")
     pred_train_X, pred_train_y, pred_test_X, pred_test_y = get_train_test_data(pred_reframed, train_p=0.0)
     print(pred_test_X, pred_test_y)
-    model_predict(scaler, model, pred_test_X, pred_test_y)
+    model_predict(scale r, model, pred_test_X, pred_test_y)
 
 #import matplotlib.pyplot as plt
 #plt.figure(figsize=(20,10))
