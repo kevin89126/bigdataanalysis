@@ -80,6 +80,7 @@ class predictModel(object):
         #train_X.shape, train_y.shape, test_X.shape, test_y.shape
         self.train_X = train_X.reshape((train_X.shape[0], 1, train_X.shape[1]))
         self.test_X  = test_X.reshape((test_X.shape[0], 1, test_X.shape[1]))
+        self.data = data
     
     def train_model(self):
         model = keras.models.Sequential()
@@ -100,6 +101,7 @@ class predictModel(object):
         pred_data = pred_data.fillna(method='ffill')
         # Copy Last date to tomorrow
         tmp = pred_data[-1:].values.tolist()
+        print(tmp)
         tomorrow = datetime.date.today() + datetime.timedelta(days=1)
         tomorrow = tomorrow.strftime("%y%y/%m/%d")
         tmp[0][0] = tomorrow
@@ -143,32 +145,34 @@ class predictModel(object):
         
         rmse = sqrt(mean_squared_error(inv_y, pred_inv_yhat))
         print('Test RMSE: %.3f' % rmse)
+        self.pred_data_bkp = pred_data_bkp
+        self.pred_inv_yhat = pred_inv_yhat
     
-    def get_data_std_mean(self, data):
-        samples = np.array(data['vfx'])
+    def get_data_std_mean(self):
+        samples = np.array(self.data['vfx'])
         arr1 = []
         for i in range(len(samples)-1):
           arr1.append((samples[i+1]-samples[i])/samples[i])
         
         arr2 = np.array(arr1)
-        std = np.std(arr2, ddof=1)
-        mean = np.mean(arr2)
-        print(std, mean)
+        self.std = np.std(arr2, ddof=1)
+        self.mean = np.mean(arr2)
+        print(self.std, self.mean)
 
     def get_result(self):
-        print(pred_data_bkp[-3:])
-        print(pred_inv_yhat[-3:])
-        pred_last1 = (pred_data_bkp[-2] - pred_data_bkp[-3]) / pred_data_bkp[-3]
+        print(self.pred_data_bkp[-3:])
+        print(self.pred_inv_yhat[-3:])
+        pred_last1 = (self.pred_data_bkp[-2] - self.pred_data_bkp[-3]) / self.pred_data_bkp[-3]
         #pred_last2 = pred_inv_yhat[len(pred_inv_yhat)-1]
         #newReturn = (pred_last1/pred_last2)/pred_last1
-        up_bond = mean + std
-        down_bond = mean - std
+        up_bond = self.mean + self.std
+        down_bond = self.mean - self.std
         if pred_last1 >= up_bond:
-            res = 1
+            res = 'up'
         elif pred_last1 <= down_bond:
-            res = -1
+            res = 'down'
         else:
-            res = 0
+            res = 'equal'
         print(pred_last1)
         print(res)
     
@@ -177,4 +181,5 @@ if __name__ == '__main__':
     tm.get_train_data()
     tm.train_model()
     tm.pred_data()
+    tm.get_data_std_mean()
     #send_slack('12/31', 'up')
