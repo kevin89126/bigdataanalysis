@@ -49,5 +49,5 @@ def get_news():
     print(newsdf)
 
 if __name__ == "__main__":
-    stock_list = ['VFINX','^SP500TR','VMOT','RWM','DOG','SH','GLD','USO']
-    get_sp500('2019.9.27','2020.9.30','PRED.csv',stock_list=stock_list)
+    stock_list = ['VFINX','VBMFX','VMOT','RWM','DOG','SH','^SP500TR']
+    get_sp500('2020.12.24','2020.12.24','PRED.csv',stock_list=stock_list)
