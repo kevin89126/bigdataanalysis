@@ -6,7 +6,8 @@ from bs4 import BeautifulSoup
 from utils import handle_date
 
 
-def get_sp500(start_date, end_date, res_path,stock_list=[], columns=()):
+def get_sp500(start_date, end_date, filename, folder,stock_list=[], columns=()):
+    folder=folder+"/"+filename
     s_y, s_m, s_d = handle_date(start_date)
     e_y, e_m, e_d = handle_date(end_date)
     sd = datetime(s_y, s_m, s_d)
@@ -25,7 +26,7 @@ def get_sp500(start_date, end_date, res_path,stock_list=[], columns=()):
     bnp.head(80)
     if columns:
         bnp.columns = columns
-    bnp.to_csv(res_path)
+    bnp.to_csv(folder)
 
 def get_rate():
     dfs = pandas.read_html('https://rate.bot.com.tw/xrt/quote/l6m/JPY')
@@ -48,6 +49,6 @@ def get_news():
     newsdf.head()
     print(newsdf)
 
-if __name__ == "__main__":
-    stock_list = ['VFINX','VBMFX','VMOT','RWM','DOG','SH','^SP500TR']
-    get_sp500('2020.12.24','2020.12.24','PRED.csv',stock_list=stock_list)
+#if __name__ == "__main__":
+#    stock_list = ['VFINX','VBMFX','VMOT','RWM','DOG','SH','^SP500TR']
+#    get_sp500('2020.12.18','2020.12.18','PRED.csv',stock_list=stock_list)

@@ -13,13 +13,21 @@ import datetime
 import numpy as np
 
 from slack import send_slack
+from get_data import get_sp500
 
 
 COLUMNS = ( 'DATE','vfx','vbx', 'vmt','rwm','dog','psh','spx')
+STOCKS = ['VFINX','VBMFX','VMOT','RWM','DOG','SH','^SP500TR']
+FOLDER = "/nfs/Workspace"
+TRAIN_FILE = "LSTM_TRAIN.csv"
+TRAIN_START_DATE = '2017.5.5'
+TRAIN_END_DATE = '2020.8.28'
+PRED_FILE = "LSTM_PRED.csv"
+PRED_START_DATE = '2020.9.4'
 
 
 def read_csv(filename, folder):
-    folder=folder+"/"+filename+".csv"
+    folder=folder+"/"+filename
     return pandas.read_csv(folder,encoding='ISO-8859-1')
 
 def Standard_MinMax(data):
@@ -50,10 +58,11 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 class predictModel(object):
 
     def __init__(self):
-        self.folder = "/nfs/Workspace"
-        self.pred_filename = "FINAL_TRAIN"
+        self.folder = FOLDER
+        self.train_filename = TRAIN_FILE
         self.data_columns = ( 'DATE','vfx','vbx', 'vmt','rwm','dog','psh', 'spx')
-        self.train_data = read_csv(filename=self.pred_filename, folder=self.folder)
+        self.train_data = read_csv(filename=self.train_filename, folder=self.folder)
+        self.pred_filename = PRED_FILE
 
     def get_train_data(self):
         data = self.train_data
@@ -95,16 +104,16 @@ class predictModel(object):
         self.model = model
 
     def pred_data(self):
-        pred_data=read_csv(filename="FINAL_PRED",folder=self.folder)
+        pred_data=read_csv(filename=self.pred_filename,folder=self.folder)
         pred_data.columns = self.data_columns
         #pred_data.isnull().sum()
         pred_data = pred_data.fillna(method='ffill')
         # Copy Last date to tomorrow
         tmp = pred_data[-1:].values.tolist()
         print(tmp)
-        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
-        tomorrow = tomorrow.strftime("%y%y/%m/%d")
-        tmp[0][0] = tomorrow
+        tomorrow = transfer_date(tmp[0][0]) + datetime.timedelta(days=7)
+        self.tomorrow = tomorrow.strftime("%Y-%m-%d")
+        tmp[0][0] = self.tomorrow
         pred_data.loc[len(pred_data)] = tmp[0]
         pred_data_bkp = np.array(pred_data['vfx']);
         print(pred_data)
@@ -140,8 +149,8 @@ class predictModel(object):
         inv_y = scaler.inverse_transform(inv_y)
         inv_y = inv_y[:,0]
         inv_y
-        print(inv_y[-3:])
-        print(pred_inv_yhat[-3:])
+        print(inv_y)
+        print(pred_inv_yhat)
         
         rmse = sqrt(mean_squared_error(inv_y, pred_inv_yhat))
         print('Test RMSE: %.3f' % rmse)
@@ -160,26 +169,61 @@ class predictModel(object):
         print(self.std, self.mean)
 
     def get_result(self):
-        print(self.pred_data_bkp[-3:])
-        print(self.pred_inv_yhat[-3:])
-        pred_last1 = (self.pred_data_bkp[-2] - self.pred_data_bkp[-3]) / self.pred_data_bkp[-3]
+        print(self.pred_data_bkp[-2:])
+        print(self.pred_inv_yhat)
+        self.pred_res = (self.pred_inv_yhat[0] - self.pred_data_bkp[-2]) / self.pred_data_bkp[-2]
         #pred_last2 = pred_inv_yhat[len(pred_inv_yhat)-1]
         #newReturn = (pred_last1/pred_last2)/pred_last1
         up_bond = self.mean + self.std
         down_bond = self.mean - self.std
-        if pred_last1 >= up_bond:
-            res = 'up'
-        elif pred_last1 <= down_bond:
-            res = 'down'
+        if self.pred_res >= up_bond:
+            self.res = 'up'
+        elif self.pred_res <= down_bond:
+            self.res = 'down'
         else:
-            res = 'equal'
-        print(pred_last1)
-        print(res)
+            self.res = 'equal'
+        print(self.pred_res)
+        print(self.res)
+        print(self.tomorrow)
+    def send_slack(self):
+        send_slack(self.tomorrow, self.pred_res, self.res)
+
+def transfer_date(date):
+    return datetime.datetime.strptime(date, '%Y-%m-%d')
+
+def get_raw_train_data():
+    raw_filename = 'RAW_' + TRAIN_FILE
+    get_sp500(TRAIN_START_DATE,TRAIN_END_DATE,raw_filename, FOLDER,stock_list=STOCKS)
+    raw_data = read_csv(raw_filename, FOLDER)
+    raw_data_dict = raw_data.to_dict()
     
+    remove_index = []
+    start_date = transfer_date(raw_data_dict['Date'][0])
+    next_date = start_date + datetime.timedelta(days=7)  
+    for cur_index in range(1, len(raw_data_dict['Date'])):
+        cur_date = transfer_date(raw_data_dict['Date'][cur_index])
+        if cur_date < next_date:
+            remove_index.append(cur_index)
+        else:
+            start_date = next_date
+            next_date = start_date + datetime.timedelta(days=7)  
+    for key in raw_data_dict.keys():
+        for index in remove_index:
+            del raw_data_dict[key][index]
+    res_data = pandas.DataFrame.from_dict(raw_data_dict)
+    res_data = res_data.reset_index(drop=True)
+    res_data.to_csv('/'.join([FOLDER,TRAIN_FILE]), index=False)
+
+def get_pred_data():
+    get_sp500(PRED_START_DATE,PRED_START_DATE,PRED_FILE, FOLDER,stock_list=STOCKS)
+
 if __name__ == '__main__':
+    #get_raw_train_data()
     tm = predictModel()
     tm.get_train_data()
     tm.train_model()
+    get_pred_data()
     tm.pred_data()
     tm.get_data_std_mean()
-    #send_slack('12/31', 'up')
+    tm.get_result()
+    tm.send_slack()
