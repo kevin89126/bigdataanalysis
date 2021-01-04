@@ -8,6 +8,6 @@ mkdir -p ./data
 mv ./spark-3.0.1-bin-hadoop2.7 /opt/apache-spark/
 pip install -r requirements.txt
 chmod +x /root/bigdataanalysis/LSTM_FINAL.py
-echo "* * * * * root /root/bigdataanalysis/LSTM_FINAL.py >> /nfs/Workspace/LSTM_FINAL.log" >> /etc/crontab
+echo "0 10 * * 6 root /root/bigdataanalysis/LSTM_FINAL.py 2>&1 | tee -a /nfs/Workspace/LSTM_FINAL.log" >> /etc/crontab
 service cron start
 rm -rf spark-3.0.1-bin-hadoop2.7.tgz
