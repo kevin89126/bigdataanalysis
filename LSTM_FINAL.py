@@ -217,6 +217,7 @@ class predictModel(object):
         real_data = None
         while _pred_date <= _today:
            try:
+               print(_pred_date, _today)
                real_data = get_raw_data(_pred_date.strftime("%Y-%m-%d"),_pred_date.strftime("%Y-%m-%d"), stock_list=STOCKS, columns=STOCKS)
                return real_data
            except Exception as e:
@@ -239,7 +240,7 @@ class predictModel(object):
            print(up_bond,low_bond,last_real,pred_date)
            print(res_data)
 
-           real_data = get_raw_data(pred_date,pred_date, stock_list=STOCKS, columns=STOCKS)
+           real_data = self._get_real_data(pred_date)
            print(real_data)
            # Update TRAIN
            real_data.to_csv(self.train_path, mode='a', header=False)
