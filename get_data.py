@@ -6,8 +6,7 @@ from bs4 import BeautifulSoup
 from utils import handle_date
 
 
-def get_sp500(start_date, end_date, filename, folder,stock_list=[], columns=()):
-    folder=folder+"/"+filename
+def get_raw_data(start_date, end_date, stock_list=[], columns=()):
     s_y, s_m, s_d = handle_date(start_date)
     e_y, e_m, e_d = handle_date(end_date)
     sd = datetime(s_y, s_m, s_d)
@@ -21,11 +20,18 @@ def get_sp500(start_date, end_date, filename, folder,stock_list=[], columns=()):
         except Exception as e:
             print('[ERROR] {0} {1}'.format(stock, str(e)))
             pass
+    if not concat_list:
+        raise Exception('[ERROR] No data found from {0} to {1}'.format(start_date, end_date))
     bnp = pandas.concat(concat_list, axis=1)
     bnp = bnp.sort_values(by="Date",ascending=True)
     bnp.head(80)
     if columns:
         bnp.columns = columns
+    return bnp
+
+def get_sp500(start_date, end_date, filename, folder,stock_list=[], columns=()):
+    folder=folder+"/"+filename
+    bnp = get_raw_data(start_date, end_date,stock_list=stock_list, columns=columns)
     bnp.to_csv(folder)
 
 def get_rate():
@@ -50,5 +56,7 @@ def get_news():
     print(newsdf)
 
 #if __name__ == "__main__":
-#    stock_list = ['VFINX','VBMFX','VMOT','RWM','DOG','SH','^SP500TR']
-#    get_sp500('2020.12.18','2020.12.18','PRED.csv',stock_list=stock_list)
+    #stock_list = ['VFINX','VBMFX','VMOT','RWM','DOG','SH','^SP500TR']
+    #get_sp500('2020.07.03','2020.07.03','PRED.csv',stock_list=stock_list)
+    #bmp = get_data('2020-09-11','2020-09-11',stock_list=stock_list)
+    #print(bmp)

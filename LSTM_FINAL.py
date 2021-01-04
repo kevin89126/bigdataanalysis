@@ -11,20 +11,26 @@ from keras import layers
 from sklearn.metrics import mean_squared_error
 import datetime
 import numpy as np
+from utils import is_file
 
 from slack import send_slack
-from get_data import get_sp500
+from get_data import get_sp500, get_raw_data
 
 
 COLUMNS = ( 'DATE','vfx','vbx', 'vmt','rwm','dog','psh','spx')
+RES_COLUMNS = ('DATE', 'REAL_DATE', 'LAST_REAL','PRED', 'REAL','UP_BOND', 'LOW_BOND', 'STD', 'MEAN', 'PRED_RATE','REAL_RATE','PRED_RES', 'REAL_RES')
 STOCKS = ['VFINX','VBMFX','VMOT','RWM','DOG','SH','^SP500TR']
 FOLDER = "/nfs/Workspace"
 TRAIN_FILE = "LSTM_TRAIN.csv"
-TRAIN_START_DATE = '2017.5.5'
-TRAIN_END_DATE = '2020.8.28'
+TRAIN_START_DATE = '2017-5-5'
+TRAIN_END_DATE = '2020-8-28'
 PRED_FILE = "LSTM_PRED.csv"
-PRED_START_DATE = '2020.9.4'
+PRED_START_DATE = '2020-9-4'
+RES_FILE = "LSTM_RES.csv"
 
+
+def get_today():
+    return datetime.date.today().strftime("%Y-%m-%d")
 
 def read_csv(filename, folder):
     folder=folder+"/"+filename
@@ -61,8 +67,24 @@ class predictModel(object):
         self.folder = FOLDER
         self.train_filename = TRAIN_FILE
         self.data_columns = ( 'DATE','vfx','vbx', 'vmt','rwm','dog','psh', 'spx')
-        self.train_data = read_csv(filename=self.train_filename, folder=self.folder)
         self.pred_filename = PRED_FILE
+        self.res_filename = RES_FILE
+        self.train_path = '/'.join([FOLDER, self.train_filename])
+        self.pred_path = '/'.join([FOLDER, self.pred_filename])
+        self.res_path = '/'.join([FOLDER, self.res_filename])
+        self.init_train_data()
+        self.init_pred_data()
+
+    def init_train_data(self):
+        if not is_file(self.train_path):
+            print('[INFO] TRAIN data not fond, init one')
+            get_raw_train_data()
+        self.train_data = read_csv(filename=self.train_filename, folder=self.folder)
+
+    def init_pred_data(self):
+        if not is_file(self.pred_path):
+            print('[INFO] PERD data not fond, init one')
+            get_pred_data()
 
     def get_train_data(self):
         data = self.train_data
@@ -95,7 +117,9 @@ class predictModel(object):
         model = keras.models.Sequential()
         model.add(layers.LSTM(8, input_shape=(self.train_X.shape[1], self.train_X.shape[2])))
         model.add(layers.Dense(1))
+        #model.add(TimeDistributed(Dense(1,activation='softmax')))
         #model.add(Dropout(0.5))
+        #model.compile(loss='categorical_crossentropy', optimizer='adam')
         model.compile(loss='mse', optimizer='adam')
         model.summary()
         history = model.fit(self.train_X, self.train_y, epochs=80, 
@@ -154,8 +178,8 @@ class predictModel(object):
         
         rmse = sqrt(mean_squared_error(inv_y, pred_inv_yhat))
         print('Test RMSE: %.3f' % rmse)
-        self.pred_data_bkp = pred_data_bkp
-        self.pred_inv_yhat = pred_inv_yhat
+        self.last_real = pred_data_bkp[-2]
+        self.pred_real = pred_inv_yhat[0]
     
     def get_data_std_mean(self):
         samples = np.array(self.data['vfx'])
@@ -166,27 +190,94 @@ class predictModel(object):
         arr2 = np.array(arr1)
         self.std = np.std(arr2, ddof=1)
         self.mean = np.mean(arr2)
+        self.up_bond = self.mean + self.std
+        self.low_bond = self.mean - self.std
         print(self.std, self.mean)
 
-    def get_result(self):
-        print(self.pred_data_bkp[-2:])
-        print(self.pred_inv_yhat)
-        self.pred_res = (self.pred_inv_yhat[0] - self.pred_data_bkp[-2]) / self.pred_data_bkp[-2]
+    def _get_result(self, last_real, value, up_bond, low_bond):
+        #print(self.pred_data_bkp[-2:])
+        #print(self.pred_inv_yhat)
+        value_rate = (value - last_real) / last_real
         #pred_last2 = pred_inv_yhat[len(pred_inv_yhat)-1]
         #newReturn = (pred_last1/pred_last2)/pred_last1
-        up_bond = self.mean + self.std
-        down_bond = self.mean - self.std
-        if self.pred_res >= up_bond:
-            self.res = 'up'
-        elif self.pred_res <= down_bond:
-            self.res = 'down'
+        if value_rate >= up_bond:
+            res = 1
+        elif value_rate <= low_bond:
+            res = -1
         else:
-            self.res = 'equal'
+            res = 0
+        return value_rate, res
+
+    def _get_real_data(self, pred_date):
+        _today = transfer_date(get_today())
+        _pred_date = transfer_date(pred_date)
+        delta = datetime.timedelta(days=1)
+        real_data = None
+        while _pred_date <= _today:
+           try:
+               real_data = get_raw_data(_pred_date.strftime("%Y-%m-%d"),_pred_date.strftime("%Y-%m-%d"), stock_list=STOCKS, columns=STOCKS)
+               return real_data
+           except Exception as e:
+               _pred_date = _pred_date + delta
+               print('[ERROR] ERROR: {0}'.format(str(e)))
+               pass
+        raise Exception('Cannot get real data: {0}'.format(pred_date))
+
+    def get_real_data(self):
+        if not is_file(self.res_path):
+            print('[WARN] Resulat file not exists!!')
+            return
+        res_data = read_csv(self.res_filename, folder=self.folder)
+        if np.isnan(res_data.loc[res_data.index[-1], 'REAL_DATE']):
+           # Get old data
+           up_bond = res_data.loc[res_data.index[-1], 'UP_BOND']
+           low_bond = res_data.loc[res_data.index[-1], 'LOW_BOND']
+           last_real = res_data.loc[res_data.index[-1], 'LAST_REAL']
+           pred_date = res_data.loc[res_data.index[-1], 'DATE']
+           print(up_bond,low_bond,last_real,pred_date)
+           print(res_data)
+
+           real_data = get_raw_data(pred_date,pred_date, stock_list=STOCKS, columns=STOCKS)
+           print(real_data)
+           # Update TRAIN
+           real_data.to_csv(self.train_path, mode='a', header=False)
+
+           # Update PRED
+           real_data.to_csv(self.pred_path)
+
+           # Update Result
+           real_date = real_data.index[-1].strftime("%Y-%m-%d")
+           real = real_data.loc[real_date, 'VFINX']
+           real_rate, real_res = self._get_result(last_real, real, up_bond, low_bond)
+           res_data.loc[res_data.index[-1], 'REAL_DATE'] = real_date
+           res_data.loc[res_data.index[-1], 'REAL'] = real
+           res_data.loc[res_data.index[-1], 'REAL_RATE'] = real_rate
+           res_data.loc[res_data.index[-1], 'REAL_RES'] = real_res
+           res_data.to_csv(self.res_path, index=False)
+           print(res_data)
+
+    def save_result(self):
+        print('[INFO] Save Result')
+        self.pred_rate, self.pred_res = self._get_result(self.last_real, self.pred_real, self.up_bond, self.low_bond)
+        print(self.pred_real)
         print(self.pred_res)
-        print(self.res)
         print(self.tomorrow)
+        print(self.up_bond)
+        print(self.low_bond)
+        print(self.last_real)
+        print(self.pred_rate)
+        print(self.pred_real)
+        new_res_data = pandas.DataFrame(np.array([[self.tomorrow, None ,self.last_real, self.pred_real, None, self.up_bond, self.low_bond,self.std, self.mean, self.pred_rate, None,self.pred_res, None]]), columns=RES_COLUMNS)
+        if is_file(self.res_path):
+           #res_data = read_csv(self.res_filename, folder=self.folder)
+           #res_data.append(new_res_data, ignore_index=True)
+           new_res_data.to_csv(self.res_path, mode='a', header=False, index=False)
+        else:
+           #res_data = new_res_data
+           new_res_data.to_csv(self.res_path, index=False )
+
     def send_slack(self):
-        send_slack(self.tomorrow, self.pred_res, self.res)
+        send_slack(self.tomorrow, self.pred_rate, self.res)
 
 def transfer_date(date):
     return datetime.datetime.strptime(date, '%Y-%m-%d')
@@ -217,13 +308,15 @@ def get_raw_train_data():
 def get_pred_data():
     get_sp500(PRED_START_DATE,PRED_START_DATE,PRED_FILE, FOLDER,stock_list=STOCKS)
 
+def save_pred_data():
+    pass
+
 if __name__ == '__main__':
-    #get_raw_train_data()
     tm = predictModel()
+    tm.get_real_data()
     tm.get_train_data()
     tm.train_model()
-    get_pred_data()
     tm.pred_data()
     tm.get_data_std_mean()
-    tm.get_result()
-    tm.send_slack()
+    tm.save_result()
+    #tm.send_slack()

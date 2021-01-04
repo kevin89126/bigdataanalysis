@@ -3,7 +3,7 @@ import os
 
 def handle_date(date):
     try:
-        date = date.split('.')
+        date = date.split('-')
         _y = int(date[0])
         _m = int(date[1])
         _d = int(date[2])
