@@ -1,3 +1,4 @@
+#!/opt/conda/bin/python
 import pandas
 from keras.layers import concatenate, Dropout
 import numpy
@@ -103,9 +104,10 @@ class predictModel(object):
         pred = {'vfx': 7}
         reframed = pandas.concat([reframed.iloc[:,0:7],reframed.iloc[:,pred['vfx']]],axis=1)
         reframed.head()
-        reframed.shape
-        train = reframed.values[:100,:]
-        test = reframed.values[100:174,:]
+        train_num = round(reframed.shape[0] * 0.6)
+        print(train_num)
+        train = reframed.values[:train_num,:]
+        test = reframed.values[train_num:,:]
         train_X, self.train_y = train[:, :-1], train[:, -1]
         test_X , self.test_y  = test[:, :-1], test[:, -1]
         #train_X.shape, train_y.shape, test_X.shape, test_y.shape
@@ -269,15 +271,27 @@ class predictModel(object):
         print(self.pred_real)
         new_res_data = pandas.DataFrame(np.array([[self.tomorrow, None ,self.last_real, self.pred_real, None, self.up_bond, self.low_bond,self.std, self.mean, self.pred_rate, None,self.pred_res, None]]), columns=RES_COLUMNS)
         if is_file(self.res_path):
-           #res_data = read_csv(self.res_filename, folder=self.folder)
+           res_data = read_csv(self.res_filename, folder=self.folder)
            #res_data.append(new_res_data, ignore_index=True)
-           new_res_data.to_csv(self.res_path, mode='a', header=False, index=False)
+           last_date = res_data.loc[res_data.index[-1], 'DATE']
+           if last_date != self.tomorrow:
+               new_res_data.to_csv(self.res_path, mode='a', header=False, index=False)
         else:
            #res_data = new_res_data
            new_res_data.to_csv(self.res_path, index=False )
 
     def send_slack(self):
-        send_slack(self.tomorrow, self.pred_rate, self.res)
+        send_slack(self.tomorrow, self.pred_real, self.pred_res)
+
+
+    def run(self):
+        self.get_real_data()
+        self.get_train_data()
+        self.train_model()
+        self.pred_data()
+        self.get_data_std_mean()
+        self.save_result()
+        self.send_slack()
 
 def transfer_date(date):
     return datetime.datetime.strptime(date, '%Y-%m-%d')
@@ -313,10 +327,4 @@ def save_pred_data():
 
 if __name__ == '__main__':
     tm = predictModel()
-    tm.get_real_data()
-    tm.get_train_data()
-    tm.train_model()
-    tm.pred_data()
-    tm.get_data_std_mean()
-    tm.save_result()
-    #tm.send_slack()
+    tm.run()
