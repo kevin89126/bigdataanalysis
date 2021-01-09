@@ -75,6 +75,7 @@ class predictModel(object):
         self.res_path = '/'.join([FOLDER, self.res_filename])
         self.init_train_data()
         self.init_pred_data()
+        self.res_date = None
 
     def init_train_data(self):
         if not is_file(self.train_path):
@@ -137,7 +138,10 @@ class predictModel(object):
         # Copy Last date to tomorrow
         tmp = pred_data[-1:].values.tolist()
         print(tmp)
-        tomorrow = transfer_date(tmp[0][0]) + datetime.timedelta(days=7)
+        
+        if not self.res_date:
+            self.res_date = tmp[0][0]
+        tomorrow = transfer_date(self.res_date) + datetime.timedelta(days=7)
         self.tomorrow = tomorrow.strftime("%Y-%m-%d")
         tmp[0][0] = self.tomorrow
         pred_data.loc[len(pred_data)] = tmp[0]
@@ -233,31 +237,32 @@ class predictModel(object):
         res_data = read_csv(self.res_filename, folder=self.folder)
         if np.isnan(res_data.loc[res_data.index[-1], 'REAL_DATE']):
            # Get old data
-           up_bond = res_data.loc[res_data.index[-1], 'UP_BOND']
-           low_bond = res_data.loc[res_data.index[-1], 'LOW_BOND']
-           last_real = res_data.loc[res_data.index[-1], 'LAST_REAL']
-           pred_date = res_data.loc[res_data.index[-1], 'DATE']
-           print(up_bond,low_bond,last_real,pred_date)
-           print(res_data)
+            up_bond = res_data.loc[res_data.index[-1], 'UP_BOND']
+            low_bond = res_data.loc[res_data.index[-1], 'LOW_BOND']
+            last_real = res_data.loc[res_data.index[-1], 'LAST_REAL']
+            pred_date = res_data.loc[res_data.index[-1], 'DATE']
+            print(up_bond,low_bond,last_real,pred_date)
+            print(res_data)
 
-           real_data = self._get_real_data(pred_date)
-           print(real_data)
-           # Update TRAIN
-           real_data.to_csv(self.train_path, mode='a', header=False)
+            real_data = self._get_real_data(pred_date)
+            print(real_data)
+            # Update TRAIN
+            real_data.to_csv(self.train_path, mode='a', header=False)
 
-           # Update PRED
-           real_data.to_csv(self.pred_path)
+            # Update PRED
+            real_data.to_csv(self.pred_path)
 
-           # Update Result
-           real_date = real_data.index[-1].strftime("%Y-%m-%d")
-           real = real_data.loc[real_date, 'VFINX']
-           real_rate, real_res = self._get_result(last_real, real, up_bond, low_bond)
-           res_data.loc[res_data.index[-1], 'REAL_DATE'] = real_date
-           res_data.loc[res_data.index[-1], 'REAL'] = real
-           res_data.loc[res_data.index[-1], 'REAL_RATE'] = real_rate
-           res_data.loc[res_data.index[-1], 'REAL_RES'] = real_res
-           res_data.to_csv(self.res_path, index=False)
-           print(res_data)
+            # Update Result
+            real_date = real_data.index[-1].strftime("%Y-%m-%d")
+            real = real_data.loc[real_date, 'VFINX']
+            real_rate, real_res = self._get_result(last_real, real, up_bond, low_bond)
+            res_data.loc[res_data.index[-1], 'REAL_DATE'] = real_date
+            res_data.loc[res_data.index[-1], 'REAL'] = real
+            res_data.loc[res_data.index[-1], 'REAL_RATE'] = real_rate
+            res_data.loc[res_data.index[-1], 'REAL_RES'] = real_res
+            res_data.to_csv(self.res_path, index=False)
+            print(res_data)
+        self.res_date = res_data.loc[res_data.index[-1], 'DATE']
 
     def save_result(self):
         print('[INFO] Save Result')
