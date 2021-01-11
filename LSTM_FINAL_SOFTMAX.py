@@ -19,7 +19,7 @@ from get_data import get_sp500, get_raw_data
 
 
 COLUMNS = ( 'DATE','vfx','vbx', 'vmt','rwm','dog','psh','spx')
-RES_COLUMNS = ('DATE', 'REAL_DATE', 'LAST_REAL','PRED', 'REAL','UP_BOND', 'LOW_BOND', 'STD', 'MEAN', 'PRED_RATE','REAL_RATE','PRED_RES', 'REAL_RES')
+RES_COLUMNS = ('DATE', 'REAL_DATE', 'PRED_KEEP', 'PRED_UP', 'PRED_DOWN', 'PRED_RES', 'REAL_RES','CORRECT')
 STOCKS = ['VFINX','VBMFX','VMOT','RWM','DOG','SH','^SP500TR']
 FOLDER = "/nfs/Workspace"
 TRAIN_FILE = "LSTM_TRAIN_SOFTMAX.csv"
@@ -28,6 +28,7 @@ TRAIN_END_DATE = '2020-8-28'
 PRED_FILE = "LSTM_PRED_SOFTMAX.csv"
 PRED_START_DATE = '2020-9-4'
 RES_FILE = "LSTM_RES_SOFTMAX.csv"
+CA_LABEL = ['KEEP','UP','DOWN']
 
 
 def get_today():
@@ -81,9 +82,6 @@ class predictModel(object):
         if not is_file(self.train_path):
             print('[INFO] TRAIN data not fond, init one')
             get_raw_train_data()
-        self.train_data = read_csv(filename=self.train_filename, folder=self.folder)
-        self.train_data.columns = self.data_columns
-
 
     def init_pred_data(self):
         if not is_file(self.pred_path):
@@ -100,14 +98,14 @@ class predictModel(object):
             if _data['vfx'][i] > up_bond:
                 train_tag.append(1)
             elif _data['vfx'][i] < low_bond:
-                train_tag.append(-1)
+                train_tag.append(2)
             else:
                 train_tag.append(0)
         _data = _data.drop(range(1,self.roll_num))
-        #print(train_tag, len(train_tag))
+        print(train_tag, len(train_tag))
         #print(len(_data['vfx']))
         train_tag = keras.utils.to_categorical(train_tag, num_classes=3)
-        #print('TTTT',train_tag, type(train_tag))
+        print('TTTT',train_tag, type(train_tag))
         #_data.insert(0, 'tag', train_tag)
         return _data, train_tag
 
@@ -123,15 +121,16 @@ class predictModel(object):
         self.last_data_for_mean = data[-self.roll_num+1:]
         data, train_tag = self.classification(data)
 
-        scaler = MinMaxScaler(feature_range=(0, 1))
-        scaled = scaler.fit_transform(data)
-        print(scaled, type(scaled))
-        scaled = numpy.concatenate([train_tag, scaled], axis=1)
+        #scaler = MinMaxScaler(feature_range=(0, 1))
+        #scaled = scaler.fit_transform(data)
+        #print(scaled, type(scaled))
+        scaled = numpy.concatenate([train_tag, data], axis=1)
 
         #print(scaled, type(scaled))
         reframed = series_to_supervised(scaled, 1, 1)
         pred = {'vfx': 10}
         reframed = pandas.concat([reframed.iloc[:,3:10],reframed.iloc[:,10:13]],axis=1)
+        print(reframed.iloc[0])
         train_num = round(reframed.shape[0] * 0.6)
         print(train_num)
         train = reframed.values[:train_num,:]
@@ -169,90 +168,66 @@ class predictModel(object):
         pred_data_date = pred_data['DATE'].iloc[-1]
         pred_data = pred_data.select_dtypes(include=['number']).pct_change().drop([0])
         #pred_data = pandas.concat([self.last_data_for_mean, pred_data])
-        pred_data.index = np.arange(1, len(pred_data) + 1)
+        #pred_data.index = np.arange(1, len(pred_data) + 1)
         #pred_data = self.classification(pred_data)
-        print(pred_data.iloc[0])
         #print(pred_data_date)
-        pred_data.insert(0, 'DATE', [pred_data_date])
-        pred_data.index = np.arange(1, len(pred_data) + 1)
+        #pred_data.insert(0, 'DATE', [pred_data_date])
+        #pred_data.index = np.arange(0, len(pred_data))
 
         # Copy Last date to tomorrow
-        #tmp = pred_data[-1:].values.tolist()
-        #print(tmp)
-        #tomorrow = transfer_date(tmp[0][0]) + datetime.timedelta(days=7)
-        #self.tomorrow = tomorrow.strftime("%Y-%m-%d")
+        #tmp = pred_data.iloc[-1:].values.tolist()
+        #print(pred_data)
+        tomorrow = transfer_date(pred_data_date) + datetime.timedelta(days=7)
+        self.tomorrow = tomorrow.strftime("%Y-%m-%d")
         #tmp[0][0] = self.tomorrow
         #pred_data.loc[len(pred_data)] = tmp[0]
         #pred_data_bkp = np.array(pred_data['vfx']);
         #print(pred_data_bkp)
         
-        del pred_data['DATE']
+        #del pred_data['DATE']
         print('AAA',pred_data)
-        scaler = MinMaxScaler(feature_range=(0, 1))
-        pred_scaled = scaler.fit_transform(pred_data)
-        print(pred_scaled)
-        pred_reframed = series_to_supervised(pred_scaled, 1, 1)
-        print(pred_reframed)
-        pred = {'vfx': 10}
-        pred_reframed = pandas.concat([pred_reframed.iloc[:,0:10],pred_reframed.iloc[:,]],axis=1)
-        pred_reframed.head()
+        #pred_scaler = MinMaxScaler(feature_range=(0, 1))
+        #pred_scaled = pred_scaler.fit_transform(pred_data)
+        #print('sss',pred_scaled)
+        #pred_reframed = series_to_supervised(pred_data, 1, 1)
+        pred_reframed = pred_data
+        print('rrr',pred_reframed)
+        #pred = {'vfx': 10}
+        pred_reframed = pandas.concat([pred_reframed.iloc[:,:]],axis=1)
+        #pred_reframed.head()
         pred_test = pred_reframed.values[:,:]
         print(pred_test)
+        pred_test_X = pred_test
         #pred_test_X.shape, pred_test_y.shape
-        #pred_test_X  = pred_test_X.reshape((pred_test_X.shape[0], 1, pred_test_X.shape[1]))
+        pred_test_X  = pred_test_X.reshape((pred_test_X.shape[0], 1, pred_test_X.shape[1]))
         #pred_test_X.shape, pred_test_y.shape
 
-        pred_yhat = self.model.predict(pred_test)
-        print(pred_yhat)
-        return
-        pred_test_X = pred_test_X.reshape((pred_test_X.shape[0], pred_test_X.shape[2]))
-        pred_yhat.shape, pred_test_X.shape
-        
-        pred = {'vfx': 0}
-        pred_inv_yhat = concatenate((pred_yhat, numpy.delete(pred_test_X, pred['vfx'], axis=1)), axis=1)
-        pred_inv_yhat = scaler.inverse_transform(pred_inv_yhat)
-        pred_inv_yhat = pred_inv_yhat[:,0]
-        pred_inv_yhat.shape,pred_inv_yhat
-        
-        real = pred_test_y.reshape((len(pred_test_y), 1))
-        inv_y = concatenate((real, numpy.delete(pred_test_X, pred['vfx'], axis=1)), axis=1)
-        inv_y = scaler.inverse_transform(inv_y)
-        inv_y = inv_y[:,0]
-        inv_y
-        print(inv_y)
-        print(pred_inv_yhat)
-        
-        rmse = sqrt(mean_squared_error(inv_y, pred_inv_yhat))
-        print('Test RMSE: %.3f' % rmse)
-        self.last_real = pred_data_bkp[-2]
-        self.pred_real = pred_inv_yhat[0]
-    
-    def get_data_std_mean(self):
-        samples = np.array(self.data['vfx'])
-        arr1 = []
-        for i in range(len(samples)-1):
-          arr1.append((samples[i+1]-samples[i])/samples[i])
-        
-        arr2 = np.array(arr1)
-        self.std = np.std(arr2, ddof=1)
-        self.mean = np.mean(arr2)
-        self.up_bond = self.mean + self.std
-        self.low_bond = self.mean - self.std
-        print(self.std, self.mean)
-
-    def _get_result(self, last_real, value, up_bond, low_bond):
+        pred_yhat = self.model.predict(pred_test_X)
+        self.pred_keep = pred_yhat[-1][0]
+        self.pred_up = pred_yhat[-1][1]
+        self.pred_down = pred_yhat[-1][2]
+        self.pred_res = CA_LABEL[numpy.argmax(pred_yhat)]
+        print(pred_yhat, CA_LABEL[numpy.argmax(pred_yhat)])
+   
+    def _get_result(self, train_data):
         #print(self.pred_data_bkp[-2:])
         #print(self.pred_inv_yhat)
-        value_rate = (value - last_real) / last_real
+        df = train_data[-30:]
+        df.index = range(1, len(df)+1)
+        _df, _df_tag = self.classification(df)
+        print(CA_LABEL[numpy.argmax(_df_tag[0])])
+        return CA_LABEL[numpy.argmax(_df_tag[0])]
+        #return CA_LABEL[numpy.argmax(_df_tag)]
+        #value_rate = (value - last_real) / last_real
         #pred_last2 = pred_inv_yhat[len(pred_inv_yhat)-1]
         #newReturn = (pred_last1/pred_last2)/pred_last1
-        if value_rate >= up_bond:
-            res = 1
-        elif value_rate <= low_bond:
-            res = -1
-        else:
-            res = 0
-        return value_rate, res
+        #if value_rate >= up_bond:
+        #    res = 1
+        #elif value_rate <= low_bond:
+        #    res = -1
+        #else:
+        #    res = 0
+        #return value_rate, res
 
     def _get_real_data(self, pred_date):
         _today = transfer_date(get_today())
@@ -262,7 +237,7 @@ class predictModel(object):
         while _pred_date <= _today:
            try:
                print(_pred_date, _today)
-               real_data = get_raw_data(_pred_date.strftime("%Y-%m-%d"),_pred_date.strftime("%Y-%m-%d"), stock_list=STOCKS, columns=STOCKS)
+               real_data = get_raw_data(_pred_date.strftime("%Y-%m-%d"),_pred_date.strftime("%Y-%m-%d"), stock_list=STOCKS)
                return real_data
            except Exception as e:
                _pred_date = _pred_date + delta
@@ -273,48 +248,67 @@ class predictModel(object):
     def get_real_data(self):
         if not is_file(self.res_path):
             print('[WARN] Resulat file not exists!!')
+            self.train_data = read_csv(filename=self.train_filename, folder=self.folder)
+            self.train_data.columns = self.data_columns
             return
         res_data = read_csv(self.res_filename, folder=self.folder)
         if np.isnan(res_data.loc[res_data.index[-1], 'REAL_DATE']):
            # Get old data
-           up_bond = res_data.loc[res_data.index[-1], 'UP_BOND']
-           low_bond = res_data.loc[res_data.index[-1], 'LOW_BOND']
-           last_real = res_data.loc[res_data.index[-1], 'LAST_REAL']
            pred_date = res_data.loc[res_data.index[-1], 'DATE']
-           print(up_bond,low_bond,last_real,pred_date)
            print(res_data)
 
            real_data = self._get_real_data(pred_date)
            print(real_data)
+
+           # Update PRED
+
+           pred_data = read_csv(self.pred_filename, folder=self.folder)
+           print(pred_data)
+           #pred_data.columns = self.data_columns
+           #real_data.columns = self.data_columns
+           pred_data = pandas.concat([pred_data[-1:],real_data], axis=1)
+           print(pred_data)
+           return
+           pred_data.to_csv(self.pred_path)
+
            # Update TRAIN
            real_data.to_csv(self.train_path, mode='a', header=False)
 
-           # Update PRED
-           real_data.to_csv(self.pred_path)
-
-           # Update Result
+           # Update real date
            real_date = real_data.index[-1].strftime("%Y-%m-%d")
-           real = real_data.loc[real_date, 'VFINX']
-           real_rate, real_res = self._get_result(last_real, real, up_bond, low_bond)
            res_data.loc[res_data.index[-1], 'REAL_DATE'] = real_date
-           res_data.loc[res_data.index[-1], 'REAL'] = real
-           res_data.loc[res_data.index[-1], 'REAL_RATE'] = real_rate
+           res_data.to_csv(self.res_path, index=False)
+
+        self.train_data = read_csv(filename=self.train_filename, folder=self.folder)
+        self.train_data.columns = self.data_columns
+
+    def update_real_res(self):
+        if not is_file(self.res_path):
+            print('[WARN] Resulat file not exists!!')
+            return
+        res_data = read_csv(self.res_filename, folder=self.folder)
+        if np.isnan(res_data.loc[res_data.index[-1], 'REAL_RES']):
+           train_data = read_csv(self.train_filename, folder=self.folder)
+           train_data.columns = self.data_columns
+           # Update Result
+           real_res = self._get_result(train_data)
+    
+           pred_res = res_data.loc[res_data.index[-1], 'PRED_RES']
            res_data.loc[res_data.index[-1], 'REAL_RES'] = real_res
+           res_data.loc[res_data.index[-1], 'CORRECT'] =  pred_res == real_res
            res_data.to_csv(self.res_path, index=False)
            print(res_data)
 
     def save_result(self):
         print('[INFO] Save Result')
-        self.pred_rate, self.pred_res = self._get_result(self.last_real, self.pred_real, self.up_bond, self.low_bond)
-        print(self.pred_real)
-        print(self.pred_res)
+        #self.pred_rate, self.pred_res = self._get_result(self.last_real, self.pred_real, self.up_bond, self.low_bond)
         print(self.tomorrow)
-        print(self.up_bond)
-        print(self.low_bond)
-        print(self.last_real)
-        print(self.pred_rate)
-        print(self.pred_real)
-        new_res_data = pandas.DataFrame(np.array([[self.tomorrow, None ,self.last_real, self.pred_real, None, self.up_bond, self.low_bond,self.std, self.mean, self.pred_rate, None,self.pred_res, None]]), columns=RES_COLUMNS)
+        print(self.pred_keep)
+        print(self.pred_up)
+        print(self.pred_down)
+        print(self.pred_res)
+
+        new_res_data = pandas.DataFrame(np.array([[self.tomorrow, None ,self.pred_keep, self.pred_up, self.pred_down,  self.pred_res, None, None]]), columns=RES_COLUMNS)
         if is_file(self.res_path):
            res_data = read_csv(self.res_filename, folder=self.folder)
            #res_data.append(new_res_data, ignore_index=True)
@@ -331,11 +325,11 @@ class predictModel(object):
 
     def run(self):
         self.get_real_data()
+        self.update_real_res()
         self.get_train_data()
         self.train_model()
         self.pred_data()
-        #self.get_data_std_mean()
-        #self.save_result()
+        self.save_result()
         #self.send_slack()
 
 def transfer_date(date):
