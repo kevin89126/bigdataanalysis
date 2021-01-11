@@ -24,9 +24,9 @@ STOCKS = ['VFINX','VBMFX','VMOT','RWM','DOG','SH','^SP500TR']
 FOLDER = "/nfs/Workspace"
 TRAIN_FILE = "LSTM_TRAIN_SOFTMAX.csv"
 TRAIN_START_DATE = '2017-5-5'
-TRAIN_END_DATE = '2020-8-21'
+TRAIN_END_DATE = '2020-8-28'
 PRED_FILE = "LSTM_PRED_SOFTMAX.csv"
-PRED_START_DATE = '2020-8-28'
+PRED_START_DATE = '2020-9-4'
 RES_FILE = "LSTM_RES_SOFTMAX.csv"
 
 
@@ -75,6 +75,7 @@ class predictModel(object):
         self.res_path = '/'.join([FOLDER, self.res_filename])
         self.init_train_data()
         self.init_pred_data()
+        self.roll_num = 30
 
     def init_train_data(self):
         if not is_file(self.train_path):
@@ -83,16 +84,17 @@ class predictModel(object):
         self.train_data = read_csv(filename=self.train_filename, folder=self.folder)
         self.train_data.columns = self.data_columns
 
+
     def init_pred_data(self):
         if not is_file(self.pred_path):
             print('[INFO] PERD data not fond, init one')
             get_pred_data()
-
-    def _create_train_tag(self, _data, roll_num=30):
+        
+    def classification(self, _data):
         train_tag = []
-        for i in range(roll_num, len(_data['vfx'])+1):
-            _mean = _data['vfx'][i-roll_num:i].mean()
-            _std = _data['vfx'][i-roll_num:i].std()
+        for i in range(self.roll_num, len(_data['vfx'])+1):
+            _mean = _data['vfx'][i-self.roll_num:i].mean()
+            _std = _data['vfx'][i-self.roll_num:i].std()
             up_bond = _mean + _std
             low_bond = _mean - _std
             if _data['vfx'][i] > up_bond:
@@ -101,50 +103,52 @@ class predictModel(object):
                 train_tag.append(-1)
             else:
                 train_tag.append(0)
-        _data = _data.drop(range(1,roll_num))
-        print(train_tag, len(train_tag))
-        print(len(_data['vfx']))
-        _data.insert(0, 'tag', train_tag)
-        return _data
-
-    def change_to_rate(self, data):
-        rate_data = data.pct_change().drop([0])
-        return self._create_train_tag(rate_data)
+        _data = _data.drop(range(1,self.roll_num))
+        #print(train_tag, len(train_tag))
+        #print(len(_data['vfx']))
+        train_tag = keras.utils.to_categorical(train_tag, num_classes=3)
+        #print('TTTT',train_tag, type(train_tag))
+        #_data.insert(0, 'tag', train_tag)
+        return _data, train_tag
 
     def get_train_data(self):
         data = self.train_data
         #data.columns = self.data_columns
         data = data.fillna(method='ffill')
         data.head()
-        #folder="/Users/wenyongjing/Downloads/第二章"
-        #data=read_csv(filename="WEN",folder=folder)
-        #data.columns = ( 'DATE','vfx','vix' ,'vbx', 'vmt','rwm','dog','psh', 'spx')
-        data = data.drop(['DATE'], axis=1)
-        data = self.change_to_rate(data)
+
+        # Change to rate
+        #data = data.drop(['DATE'], axis=1)
+        data = data.select_dtypes(include=['number']).pct_change().drop([0])
+        self.last_data_for_mean = data[-self.roll_num+1:]
+        data, train_tag = self.classification(data)
+
         scaler = MinMaxScaler(feature_range=(0, 1))
         scaled = scaler.fit_transform(data)
-        data.head()
+        print(scaled, type(scaled))
+        scaled = numpy.concatenate([train_tag, scaled], axis=1)
+
+        #print(scaled, type(scaled))
         reframed = series_to_supervised(scaled, 1, 1)
-        reframed.head()
-        pred = {'vfx': 8}
-        reframed = pandas.concat([reframed.iloc[:,0:8],reframed.iloc[:,pred['vfx']]],axis=1)
-        reframed.head()
+        pred = {'vfx': 10}
+        reframed = pandas.concat([reframed.iloc[:,3:10],reframed.iloc[:,10:13]],axis=1)
         train_num = round(reframed.shape[0] * 0.6)
         print(train_num)
         train = reframed.values[:train_num,:]
         test = reframed.values[train_num:,:]
-        train_X, self.train_y = train[:, :-1], train[:, -1]
-        test_X , self.test_y  = test[:, :-1], test[:, -1]
+        train_X, self.train_y = train[:, :-3], train[:, -3:]
+        test_X , self.test_y  = test[:, :-3], test[:, -3:]
         #train_X.shape, train_y.shape, test_X.shape, test_y.shape
         self.train_X = train_X.reshape((train_X.shape[0], 1, train_X.shape[1]))
         self.test_X  = test_X.reshape((test_X.shape[0], 1, test_X.shape[1]))
+        print(self.train_X[0], self.train_y[0])
         self.data = data
     
     def train_model(self):
         model = keras.models.Sequential()
-        model.add(layers.LSTM(8, input_shape=(self.train_X.shape[1], self.train_X.shape[2])))
+        model.add(layers.LSTM(10, input_shape=(self.train_X.shape[1], self.train_X.shape[2])))
         #model.add(layers.Dense(1))
-        model.add(layers.Dense(1,activation='softmax'))
+        model.add(layers.Dense(3,activation='softmax'))
         #model.add(Dropout(0.5))
         model.compile(loss='categorical_crossentropy', optimizer='adam')
         #model.compile(loss='mse', optimizer='adam')
@@ -159,33 +163,48 @@ class predictModel(object):
         pred_data.columns = self.data_columns
         #pred_data.isnull().sum()
         pred_data = pred_data.fillna(method='ffill')
+
+        # Change to rate
+        #pred_data = pred_data.drop(['DATE'], axis=1)
+        pred_data_date = pred_data['DATE'].iloc[-1]
+        pred_data = pred_data.select_dtypes(include=['number']).pct_change().drop([0])
+        #pred_data = pandas.concat([self.last_data_for_mean, pred_data])
+        pred_data.index = np.arange(1, len(pred_data) + 1)
+        #pred_data = self.classification(pred_data)
+        print(pred_data.iloc[0])
+        #print(pred_data_date)
+        pred_data.insert(0, 'DATE', [pred_data_date])
+        pred_data.index = np.arange(1, len(pred_data) + 1)
+
         # Copy Last date to tomorrow
-        tmp = pred_data[-1:].values.tolist()
-        print(tmp)
-        tomorrow = transfer_date(tmp[0][0]) + datetime.timedelta(days=7)
-        self.tomorrow = tomorrow.strftime("%Y-%m-%d")
-        tmp[0][0] = self.tomorrow
-        pred_data.loc[len(pred_data)] = tmp[0]
-        pred_data_bkp = np.array(pred_data['vfx']);
-        print(pred_data)
-        print(pred_data_bkp)
+        #tmp = pred_data[-1:].values.tolist()
+        #print(tmp)
+        #tomorrow = transfer_date(tmp[0][0]) + datetime.timedelta(days=7)
+        #self.tomorrow = tomorrow.strftime("%Y-%m-%d")
+        #tmp[0][0] = self.tomorrow
+        #pred_data.loc[len(pred_data)] = tmp[0]
+        #pred_data_bkp = np.array(pred_data['vfx']);
+        #print(pred_data_bkp)
         
         del pred_data['DATE']
+        print('AAA',pred_data)
         scaler = MinMaxScaler(feature_range=(0, 1))
         pred_scaled = scaler.fit_transform(pred_data)
-        pred_data.head()
+        print(pred_scaled)
         pred_reframed = series_to_supervised(pred_scaled, 1, 1)
-        pred_reframed.head()
-        pred = {'vfx': 8}
-        pred_reframed = pandas.concat([pred_reframed.iloc[:,0:8],pred_reframed.iloc[:,pred['vfx']]],axis=1)
+        print(pred_reframed)
+        pred = {'vfx': 10}
+        pred_reframed = pandas.concat([pred_reframed.iloc[:,0:10],pred_reframed.iloc[:,]],axis=1)
         pred_reframed.head()
         pred_test = pred_reframed.values[:,:]
-        pred_test_X , pred_test_y  = pred_test[:, :-1], pred_test[:, -1]
-        pred_test_X.shape, pred_test_y.shape
-        pred_test_X  = pred_test_X.reshape((pred_test_X.shape[0], 1, pred_test_X.shape[1]))
-        pred_test_X.shape, pred_test_y.shape
-        pred_yhat = self.model.predict(pred_test_X)
-        
+        print(pred_test)
+        #pred_test_X.shape, pred_test_y.shape
+        #pred_test_X  = pred_test_X.reshape((pred_test_X.shape[0], 1, pred_test_X.shape[1]))
+        #pred_test_X.shape, pred_test_y.shape
+
+        pred_yhat = self.model.predict(pred_test)
+        print(pred_yhat)
+        return
         pred_test_X = pred_test_X.reshape((pred_test_X.shape[0], pred_test_X.shape[2]))
         pred_yhat.shape, pred_test_X.shape
         
@@ -314,7 +333,7 @@ class predictModel(object):
         self.get_real_data()
         self.get_train_data()
         self.train_model()
-        #self.pred_data()
+        self.pred_data()
         #self.get_data_std_mean()
         #self.save_result()
         #self.send_slack()
@@ -322,12 +341,9 @@ class predictModel(object):
 def transfer_date(date):
     return datetime.datetime.strptime(date, '%Y-%m-%d')
 
-def get_raw_train_data():
-    raw_filename = 'RAW_' + TRAIN_FILE
-    get_sp500(TRAIN_START_DATE,TRAIN_END_DATE,raw_filename, FOLDER,stock_list=STOCKS)
+def filter_data(raw_filename, filename):
     raw_data = read_csv(raw_filename, FOLDER)
     raw_data_dict = raw_data.to_dict()
-    
     remove_index = []
     start_date = transfer_date(raw_data_dict['Date'][0])
     next_date = start_date + datetime.timedelta(days=7)  
@@ -343,10 +359,18 @@ def get_raw_train_data():
             del raw_data_dict[key][index]
     res_data = pandas.DataFrame.from_dict(raw_data_dict)
     res_data = res_data.reset_index(drop=True)
-    res_data.to_csv('/'.join([FOLDER,TRAIN_FILE]), index=False)
+    res_data.to_csv('/'.join([FOLDER,filename]), index=False)
 
+
+def get_raw_train_data():
+    raw_train_filename = 'RAW_' + TRAIN_FILE
+    get_sp500(TRAIN_START_DATE,TRAIN_END_DATE,raw_train_filename, FOLDER,stock_list=STOCKS)
+    filter_data(raw_train_filename, TRAIN_FILE)
+    
 def get_pred_data():
-    get_sp500(PRED_START_DATE,PRED_START_DATE,PRED_FILE, FOLDER,stock_list=STOCKS)
+    raw_pred_filename = 'RAW_' + PRED_FILE
+    get_sp500(TRAIN_END_DATE,PRED_START_DATE,raw_pred_filename, FOLDER,stock_list=STOCKS)
+    filter_data(raw_pred_filename, PRED_FILE)
 
 def save_pred_data():
     pass

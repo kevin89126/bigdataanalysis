@@ -188,7 +188,7 @@ class predictModel(object):
         self.pred_real = pred_inv_yhat[0]
     
     def get_data_std_mean(self):
-        samples = np.array(self.data['vfx'])
+        samples = np.array(self.data['vfx'][-30:])
         arr1 = []
         for i in range(len(samples)-1):
           arr1.append((samples[i+1]-samples[i])/samples[i])
