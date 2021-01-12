@@ -18,8 +18,8 @@ from slack import send_slack
 from get_data import get_sp500, get_raw_data
 
 
-COLUMNS = ( 'DATE','vfx','vbx', 'vmt','rwm','dog','psh','spx')
-RES_COLUMNS = ('DATE', 'REAL_DATE', 'PRED_KEEP', 'PRED_UP', 'PRED_DOWN', 'PRED_RES', 'REAL_RES','CORRECT')
+COLUMNS = ('vfx','vbx', 'vmt','rwm','dog','psh','spx')
+RES_COLUMNS = ('Date', 'REAL_DATE', 'PRED_KEEP', 'PRED_UP', 'PRED_DOWN', 'PRED_RES', 'REAL_RES','CORRECT')
 STOCKS = ['VFINX','VBMFX','VMOT','RWM','DOG','SH','^SP500TR']
 FOLDER = "/nfs/Workspace"
 TRAIN_FILE = "LSTM_TRAIN_SOFTMAX.csv"
@@ -68,7 +68,6 @@ class predictModel(object):
     def __init__(self):
         self.folder = FOLDER
         self.train_filename = TRAIN_FILE
-        self.data_columns = ( 'DATE','vfx','vbx', 'vmt','rwm','dog','psh', 'spx')
         self.pred_filename = PRED_FILE
         self.res_filename = RES_FILE
         self.train_path = '/'.join([FOLDER, self.train_filename])
@@ -158,14 +157,14 @@ class predictModel(object):
         self.model = model
 
     def pred_data(self):
-        pred_data=read_csv(filename=self.pred_filename,folder=self.folder)
-        pred_data.columns = self.data_columns
+        pred_data=read_csv(self.pred_filename,self.folder)
+        print('RRRR', pred_data)
         #pred_data.isnull().sum()
         pred_data = pred_data.fillna(method='ffill')
 
         # Change to rate
         #pred_data = pred_data.drop(['DATE'], axis=1)
-        pred_data_date = pred_data['DATE'].iloc[-1]
+        pred_data_date = pred_data['Date'].iloc[-1]
         pred_data = pred_data.select_dtypes(include=['number']).pct_change().drop([0])
         #pred_data = pandas.concat([self.last_data_for_mean, pred_data])
         #pred_data.index = np.arange(1, len(pred_data) + 1)
@@ -176,9 +175,9 @@ class predictModel(object):
 
         # Copy Last date to tomorrow
         #tmp = pred_data.iloc[-1:].values.tolist()
-        #print(pred_data)
-        tomorrow = transfer_date(pred_data_date) + datetime.timedelta(days=7)
-        self.tomorrow = tomorrow.strftime("%Y-%m-%d")
+        next_date = transfer_date(pred_data_date) + datetime.timedelta(days=7)
+        self.next_date = next_date.strftime("%Y-%m-%d")
+        self.cur_date = pred_data_date
         #tmp[0][0] = self.tomorrow
         #pred_data.loc[len(pred_data)] = tmp[0]
         #pred_data_bkp = np.array(pred_data['vfx']);
@@ -237,7 +236,7 @@ class predictModel(object):
         while _pred_date <= _today:
            try:
                print(_pred_date, _today)
-               real_data = get_raw_data(_pred_date.strftime("%Y-%m-%d"),_pred_date.strftime("%Y-%m-%d"), stock_list=STOCKS)
+               real_data = get_raw_data(_pred_date.strftime("%Y-%m-%d"),_pred_date.strftime("%Y-%m-%d"), stock_list=STOCKS, columns=COLUMNS)
                return real_data
            except Exception as e:
                _pred_date = _pred_date + delta
@@ -248,48 +247,52 @@ class predictModel(object):
     def get_real_data(self):
         if not is_file(self.res_path):
             print('[WARN] Resulat file not exists!!')
-            self.train_data = read_csv(filename=self.train_filename, folder=self.folder)
-            self.train_data.columns = self.data_columns
+            self.train_data = read_csv(self.train_filename, self.folder)
             return
-        res_data = read_csv(self.res_filename, folder=self.folder)
-        if np.isnan(res_data.loc[res_data.index[-1], 'REAL_DATE']):
+        res_data = read_csv(self.res_filename, self.folder)
+        print(res_data)
+        _real_date = int(res_data.loc[res_data.index[-1], 'REAL_DATE'])
+        print('GGGGGG',_real_date, type(_real_date))
+        if _real_date == -1:
            # Get old data
-           pred_date = res_data.loc[res_data.index[-1], 'DATE']
-           print(res_data)
+           pred_date = res_data.loc[res_data.index[-1], 'Date']
+           print('RES\n',res_data)
 
-           real_data = self._get_real_data(pred_date)
-           print(real_data)
+           real_data = self._get_real_data(pred_date).reset_index()
+           real_data = handle_real_data(real_data)
+           print('REAL\n',real_data)
 
            # Update PRED
 
-           pred_data = read_csv(self.pred_filename, folder=self.folder)
-           print(pred_data)
+           pred_data = read_csv(self.pred_filename, self.folder)
+           print('PRED\n',pred_data[-1:])
            #pred_data.columns = self.data_columns
            #real_data.columns = self.data_columns
-           pred_data = pandas.concat([pred_data[-1:],real_data], axis=1)
+           pred_data = pandas.concat([pred_data[-1:],real_data])
            print(pred_data)
-           return
-           pred_data.to_csv(self.pred_path)
+           pred_data.to_csv(self.pred_path, index=False)
 
            # Update TRAIN
-           real_data.to_csv(self.train_path, mode='a', header=False)
+           print(len(real_data))
+           real_data.to_csv(self.train_path, mode='a', index=False, header=False)
+           print('aaaa')
 
            # Update real date
-           real_date = real_data.index[-1].strftime("%Y-%m-%d")
+           real_date = real_data.loc[real_data.index[-1], 'Date']
            res_data.loc[res_data.index[-1], 'REAL_DATE'] = real_date
            res_data.to_csv(self.res_path, index=False)
 
-        self.train_data = read_csv(filename=self.train_filename, folder=self.folder)
-        self.train_data.columns = self.data_columns
+        self.train_data = read_csv(self.train_filename, self.folder)
 
     def update_real_res(self):
         if not is_file(self.res_path):
             print('[WARN] Resulat file not exists!!')
             return
-        res_data = read_csv(self.res_filename, folder=self.folder)
-        if np.isnan(res_data.loc[res_data.index[-1], 'REAL_RES']):
-           train_data = read_csv(self.train_filename, folder=self.folder)
-           train_data.columns = self.data_columns
+        res_data = read_csv(self.res_filename, self.folder)
+        _real_res = int(res_data.loc[res_data.index[-1], 'REAL_RES'])
+        if _real_res == -1:
+           print('REASSSSSSS')
+           train_data = read_csv(self.train_filename, self.folder)
            # Update Result
            real_res = self._get_result(train_data)
     
@@ -302,18 +305,19 @@ class predictModel(object):
     def save_result(self):
         print('[INFO] Save Result')
         #self.pred_rate, self.pred_res = self._get_result(self.last_real, self.pred_real, self.up_bond, self.low_bond)
-        print(self.tomorrow)
+        print(self.next_date)
+        print(self.cur_date)
         print(self.pred_keep)
         print(self.pred_up)
         print(self.pred_down)
         print(self.pred_res)
 
-        new_res_data = pandas.DataFrame(np.array([[self.tomorrow, None ,self.pred_keep, self.pred_up, self.pred_down,  self.pred_res, None, None]]), columns=RES_COLUMNS)
+        new_res_data = pandas.DataFrame(np.array([[self.next_date,-1,self.pred_keep, self.pred_up, self.pred_down,  self.pred_res, -1, -1]]), columns=RES_COLUMNS)
         if is_file(self.res_path):
-           res_data = read_csv(self.res_filename, folder=self.folder)
+           res_data = read_csv(self.res_filename, self.folder)
            #res_data.append(new_res_data, ignore_index=True)
-           last_date = res_data.loc[res_data.index[-1], 'DATE']
-           if last_date != self.tomorrow:
+           last_date = res_data.loc[res_data.index[-1], 'Date']
+           if last_date != self.next_date:
                new_res_data.to_csv(self.res_path, mode='a', header=False, index=False)
         else:
            #res_data = new_res_data
@@ -335,14 +339,14 @@ class predictModel(object):
 def transfer_date(date):
     return datetime.datetime.strptime(date, '%Y-%m-%d')
 
-def filter_data(raw_filename, filename):
-    raw_data = read_csv(raw_filename, FOLDER)
-    raw_data_dict = raw_data.to_dict()
+def filter_data(data, filename):
+    data = data.reset_index()
+    raw_data_dict = data.to_dict()
     remove_index = []
-    start_date = transfer_date(raw_data_dict['Date'][0])
+    start_date = raw_data_dict['Date'][0]
     next_date = start_date + datetime.timedelta(days=7)  
     for cur_index in range(1, len(raw_data_dict['Date'])):
-        cur_date = transfer_date(raw_data_dict['Date'][cur_index])
+        cur_date = raw_data_dict['Date'][cur_index]
         if cur_date < next_date:
             remove_index.append(cur_index)
         else:
@@ -355,16 +359,21 @@ def filter_data(raw_filename, filename):
     res_data = res_data.reset_index(drop=True)
     res_data.to_csv('/'.join([FOLDER,filename]), index=False)
 
+def handle_real_data(data):
+    data = data.reset_index()
+    date = data['Date'].iloc[-1]
+    data['Date'].iloc[-1] = date.strftime("%Y-%m-%d")
+    return data.drop(columns=['index'])
+
+def base_get_data(filename, st_date, end_date):
+    data = get_raw_data(st_date, end_date, stock_list=STOCKS, columns=COLUMNS)
+    filter_data(data, filename)
 
 def get_raw_train_data():
-    raw_train_filename = 'RAW_' + TRAIN_FILE
-    get_sp500(TRAIN_START_DATE,TRAIN_END_DATE,raw_train_filename, FOLDER,stock_list=STOCKS)
-    filter_data(raw_train_filename, TRAIN_FILE)
+    base_get_data(TRAIN_FILE,TRAIN_START_DATE,TRAIN_END_DATE)
     
 def get_pred_data():
-    raw_pred_filename = 'RAW_' + PRED_FILE
-    get_sp500(TRAIN_END_DATE,PRED_START_DATE,raw_pred_filename, FOLDER,stock_list=STOCKS)
-    filter_data(raw_pred_filename, PRED_FILE)
+    base_get_data(PRED_FILE,TRAIN_END_DATE,PRED_START_DATE)
 
 def save_pred_data():
     pass
