@@ -108,6 +108,19 @@ class predictModel(object):
         #_data.insert(0, 'tag', train_tag)
         return _data, train_tag
 
+    def get_real_classification(self, _data):
+        _mean = _data['vfx'].mean()
+        _std = _data['vfx'].std()
+        up_bond = _mean + _std
+        low_bond = _mean - _std
+        print('UP',up_bond, 'Low', low_bond, 'Date', _data['vfx'].iloc[-1])
+        if _data['vfx'].iloc[-1] > up_bond:
+            return 1
+        elif _data['vfx'].iloc[-1] < low_bond:
+            return 2
+        else:
+            return 0
+
     def get_train_data(self):
         data = self.train_data
         #data.columns = self.data_columns
@@ -152,7 +165,7 @@ class predictModel(object):
         #model.compile(loss='mse', optimizer='adam')
         model.summary()
         history = model.fit(self.train_X, self.train_y, epochs=80, 
-                        batch_size=9, validation_data=(self.test_X, self.test_y), 
+                        batch_size=3, validation_data=(self.test_X, self.test_y), 
                         verbose=1, shuffle=False)
         self.model = model
 
@@ -212,10 +225,11 @@ class predictModel(object):
         #print(self.pred_data_bkp[-2:])
         #print(self.pred_inv_yhat)
         df = train_data[-30:]
-        df.index = range(1, len(df)+1)
-        _df, _df_tag = self.classification(df)
-        print(CA_LABEL[numpy.argmax(_df_tag[0])])
-        return CA_LABEL[numpy.argmax(_df_tag[0])]
+        df.index = range(0, len(df))
+        df = df.select_dtypes(include=['number']).pct_change().drop([0])
+        _df_tag = self.get_real_classification(df)
+        print(CA_LABEL[_df_tag])
+        return CA_LABEL[_df_tag]
         #return CA_LABEL[numpy.argmax(_df_tag)]
         #value_rate = (value - last_real) / last_real
         #pred_last2 = pred_inv_yhat[len(pred_inv_yhat)-1]
@@ -251,9 +265,9 @@ class predictModel(object):
             return
         res_data = read_csv(self.res_filename, self.folder)
         print(res_data)
-        _real_date = int(res_data.loc[res_data.index[-1], 'REAL_DATE'])
+        _real_date = str(res_data.loc[res_data.index[-1], 'REAL_DATE'])
         print('GGGGGG',_real_date, type(_real_date))
-        if _real_date == -1:
+        if _real_date == "-1":
            # Get old data
            pred_date = res_data.loc[res_data.index[-1], 'Date']
            print('RES\n',res_data)
@@ -289,8 +303,9 @@ class predictModel(object):
             print('[WARN] Resulat file not exists!!')
             return
         res_data = read_csv(self.res_filename, self.folder)
-        _real_res = int(res_data.loc[res_data.index[-1], 'REAL_RES'])
-        if _real_res == -1:
+        _real_res = str(res_data.loc[res_data.index[-1], 'REAL_RES'])
+        print("_REAL_RES", _real_res)
+        if _real_res == "-1":
            print('REASSSSSSS')
            train_data = read_csv(self.train_filename, self.folder)
            # Update Result
@@ -312,7 +327,7 @@ class predictModel(object):
         print(self.pred_down)
         print(self.pred_res)
 
-        new_res_data = pandas.DataFrame(np.array([[self.next_date,-1,self.pred_keep, self.pred_up, self.pred_down,  self.pred_res, -1, -1]]), columns=RES_COLUMNS)
+        new_res_data = pandas.DataFrame(np.array([[self.next_date,"-1",self.pred_keep, self.pred_up, self.pred_down,  self.pred_res, "-1", "-1"]]), columns=RES_COLUMNS)
         if is_file(self.res_path):
            res_data = read_csv(self.res_filename, self.folder)
            #res_data.append(new_res_data, ignore_index=True)
@@ -335,7 +350,7 @@ class predictModel(object):
         self.train_model()
         self.pred_data()
         self.save_result()
-        self.send_slack()
+        #self.send_slack()
 
 def transfer_date(date):
     return datetime.datetime.strptime(date, '%Y-%m-%d')
@@ -380,5 +395,6 @@ def save_pred_data():
     pass
 
 if __name__ == '__main__':
-    tm = predictModel()
-    tm.run()
+    for i in range(30):
+        tm = predictModel()
+        tm.run()
