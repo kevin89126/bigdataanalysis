@@ -287,7 +287,8 @@ class predictModel(object):
            new_res_data.to_csv(self.res_path, index=False )
 
     def send_slack(self):
-        send_slack(self.tomorrow, self.pred_real, self.pred_res)
+        msg = "Team 03 predict {0} price {1} Classification: {2}".format(self.tomorrow, self.pred_real, self.pred_res)
+        send_slack(msg)
 
 
     def run(self):

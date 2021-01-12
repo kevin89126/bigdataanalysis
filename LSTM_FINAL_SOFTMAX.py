@@ -15,7 +15,7 @@ import numpy as np
 from utils import is_file
 
 from slack import send_slack
-from get_data import get_sp500, get_raw_data
+from get_data import get_raw_data
 
 
 COLUMNS = ('vfx','vbx', 'vmt','rwm','dog','psh','spx')
@@ -324,8 +324,9 @@ class predictModel(object):
            new_res_data.to_csv(self.res_path, index=False )
 
     def send_slack(self):
-        send_slack(self.tomorrow, self.pred_real, self.pred_res)
-
+        res = ','.join([str(self.pred_keep),str(self.pred_up),str(self.pred_down)])
+        msg = "Team 03 predict {0} \nsoftmax: {1}(Keep,Up,Down) \nClassification: {2}".format(self.next_date, res, self.pred_res)
+        send_slack(msg)
 
     def run(self):
         self.get_real_data()
@@ -334,7 +335,7 @@ class predictModel(object):
         self.train_model()
         self.pred_data()
         self.save_result()
-        #self.send_slack()
+        self.send_slack()
 
 def transfer_date(date):
     return datetime.datetime.strptime(date, '%Y-%m-%d')
