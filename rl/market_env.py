@@ -95,13 +95,16 @@ class MarketEnv(gym.Env):
         features = features.sort_index().sort_index(axis=1)
 
         features = resample_backfill(features, resample_rules[trade_freq]).dropna()
+        # TODO no need to change
         # Scale features to -1 and 1
         for col in features.columns:
             mean = features[col].mean()
             std = features[col].std()
             features[col] = (features[col]-mean)/std
+        # TODO no need to resample
         # resample based on trade frequency e.g. weeks or months
         returns = resample_relative_changes(returns, resample_rules[trade_freq])
+
         # Only keep feature data within peroid of investments returns
         features = features[(features.index.isin(returns.index))]
         # Only keep investment retuns with features
@@ -152,6 +155,8 @@ class MarketEnv(gym.Env):
         self.current_index += 1
         # update investments and wealth
         previous_investments = self.investments
+
+        # invest all wealth to target investments
         target_investments = self.wealth * self.weights
 
         # todo add trading cost??

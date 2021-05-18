@@ -1,18 +1,9 @@
 import os
+from datetime import datetime
 import pandas as pd
-
-FOLDER = './Data/'
-FILES = ['Fund_RT_Monthly.csv']
-FILES_PATH = [FOLDER + FILE for FILE in FILES]
-FUND_NAME_COL = ['Date','FMFUNDCLASSINFOC_ID','Current','Profit','Currency']
-FUND_DIV = FOLDER + 'Fund_DIV.csv'
-FUND_MONTH = FOLDER + 'Fund_RT_Monthly.csv'
-FUND_FEATURES = FOLDER + 'features.csv'
-FMFUNDCLASSINFOC_ID = 'FMFUNDCLASSINFOC_ID'
-DATE = 'Date'
-PROFIT = 'Profit'
-PERFORMANCEIDS = ['0P00000AP4','0P00000AP8','0P00000AP9']
-PERFORMANCEID = 'PERFORMANCEID'
+from constants import PERFORMANCEIDS, FOLDER, FILES, FILES_PATH, FUND_NAME_COL, \
+    FUND_DIV, FUND_MONTH, FUND_FEATURES, FMFUNDCLASSINFOC_ID, DATE, PROFIT, PERFORMANCEID, \
+    BEGIN_DATE_FOR_TEST, FIRST_DATE
 
 
 class FundDataHandler():
@@ -78,11 +69,23 @@ class FundDataHandler():
     def combine_fund_profit_by_pfid(self):
         frames = []
         performance_ids = []
+        ids = []
         for _id in PERFORMANCEIDS:
-            df_profit = self.get_fund_profit_by_pfid(_id)
+            try:
+                df_profit = self.get_fund_profit_by_pfid(_id)
+            except:
+                print('[WARNING] {0} not found'.format(_id))
+                continue
+            first_valid_date = df_profit.first_valid_index()
+            if datetime.strptime(first_valid_date, '%Y-%m-%d') > datetime.strptime(FIRST_DATE, '%Y-%m-%d'):
+                print('[WARNING] {} first valid date {} is earlier first date {}'.format(_id, first_valid_date, FIRST_DATE))
+                #pass
+            else:
+                print('[INFO] {} is valid date'.format(_id))
+            ids.append(_id)
             frames.append(df_profit)
         df_res =  pd.concat(frames, axis=1).sort_index(ascending=True)
-        df_res.columns = PERFORMANCEIDS
+        df_res.columns = ids
         return df_res
 
     def combine_fund_feature(self, df_fund, df_features):
@@ -91,13 +94,26 @@ class FundDataHandler():
 
     def fund_profit_to_csv(self, df, path):
         df = df.reset_index(level=['DATAYM'])
-        df.to_csv('./out/test.csv', index=False)
+        df.to_csv(path, index=False)
+
+    def seperate_train_test(self, df, date):
+        # data format str 2021-04-28
+        try:
+            row_number = df.index.get_loc(date)
+        except:
+            raise Exception('[ERROR] Cannot find {} in index'.format(date))
+        df_train = df[:row_number]
+        df_test = df[row_number:]
+        return df_train, df_test
 
     def run(self):
         df_fund = fdh.combine_fund_profit_by_pfid()
-        res_fund = self.combine_fund_feature(df_fund, self.df_features)
-        print(res_fund.head())
-        print(res_fund.tail())
+        df_train, df_test = self.seperate_train_test(df_fund, BEGIN_DATE_FOR_TEST)
+        #res_fund = self.combine_fund_feature(df_fund, self.df_features)
+        self.fund_profit_to_csv(df_train, './out/fund_train.csv')
+        self.fund_profit_to_csv(df_test, './out/fund_test.csv')
+        print(df_train.tail())
+        print(df_test.head())
 
 if __name__ == '__main__':
     fdh = FundDataHandler()
