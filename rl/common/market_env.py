@@ -7,7 +7,6 @@ from gym import spaces
 from gym.utils import seeding
 from random import uniform
 from pandas import DataFrame
-from base_market_env import MarketEnv as BaseMarketEnv
 
 
 def proration_weights(action):
@@ -56,7 +55,7 @@ def resample_relative_changes(df, rule):
     return df.apply(lambda x: 1+x).resample(rule).prod().apply(lambda x: x-1)
 
 
-class MarketEnv(BaseMarketEnv):
+class MarketEnv(gym.Env):
 
     def __init__(self, returns: DataFrame, features: DataFrame, show_info=False, trade_freq='days',
                  action_to_weights_func=proration_weights,
