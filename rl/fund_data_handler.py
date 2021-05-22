@@ -131,6 +131,7 @@ class FundDataHandler():
             frames.append(df_profit)
         df_res =  pd.concat(frames, axis=1).sort_index(ascending=True)
         df_res.columns = ids
+        df_res.index.name = 'Date'
         return df_res
 
     def combine_fund_feature(self, df_fund, df_features):
@@ -181,8 +182,8 @@ class FundDataHandler():
 
         # Seperate and save funds
         df_train, df_validation = self.seperate_train_test(df_funds, BEGIN_DATE_FOR_TEST)
-        self.fund_profit_to_csv(df_train, TRAIN_DATA, 'DATAYM')
-        self.fund_profit_to_csv(df_validation, VALIDATE_DATA, 'DATAYM')
+        self.fund_profit_to_csv(df_train, TRAIN_DATA, 'Date')
+        self.fund_profit_to_csv(df_validation, VALIDATE_DATA, 'Date')
 
 if __name__ == '__main__':
     fdh = FundDataHandler()
