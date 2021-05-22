@@ -50,7 +50,8 @@ def train_model(variant):
     df_ret_train, df_ret_val, df_feature_train, df_feature_val = load_dataset()
     df_ret_train.to_csv(os.path.join(log_dir, 'df_ret_train.csv'))
     df_ret_val.to_csv(os.path.join(log_dir, 'df_ret_val.csv'))
-    df_feature.to_csv(os.path.join(log_dir, 'df_feature.csv'))
+    df_feature_train.to_csv(os.path.join(log_dir, 'df_feature_train.csv'))
+    df_feature_val.to_csv(os.path.join(log_dir, 'df_feature_val.csv'))
     expl_env = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_train, features=df_feature_train,
                                          **expl_env_kwargs))
 
