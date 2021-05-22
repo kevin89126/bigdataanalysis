@@ -3,7 +3,8 @@ from datetime import datetime
 import pandas as pd
 from constants import PERFORMANCEIDS, FOLDER, FILES, FILES_PATH, FUND_NAME_COL, \
     FUND_DIV, FUND_MONTH, FUND_FEATURES, FMFUNDCLASSINFOC_ID, DATE, PROFIT, PERFORMANCEID, \
-    BEGIN_DATE_FOR_TEST, FIRST_DATE, TRAIN_DATA, VALIDATE_DATA, FUND_FEATURES, END_DATE
+    BEGIN_DATE_FOR_TEST, FIRST_DATE, TRAIN_DATA, VALIDATE_DATA, FUND_FEATURES, END_DATE, \
+    FEATURE_TRAIN_DATA, FEATURE_VALIDATE_DATA
 
 
 class FundDataHandler():
@@ -12,6 +13,7 @@ class FundDataHandler():
         #self.df_fund_div = pd.read_csv(FUND_DIV)
         self.df_fund = pd.read_csv(FUND_MONTH)
         self.df_features = pd.read_csv(FUND_FEATURES)
+        self.df_features = self.df_features.drop(columns=['index'])
 
     def handle_features_date(self, df):
         # Change Date to 'xxxx-xx-01'
@@ -39,16 +41,6 @@ class FundDataHandler():
         df.index = df['Date']
         res = df.drop(columns=['Date'],axis=1)
         return res.pct_change()
-
-    def handle_features(self):
-        df_features = self.handle_features_date(self.df_features)
-        df_features = self.change_to_pct(self.df_features)
-        f_valid, f_invalid = self.check_first_date_valid(self.df_features, FIRST_DATE)
-        df_features = self.filter_cols(self.df_features, f_valid)
-        df_features = self.filter_date(df_features, FIRST_DATE, END_DATE)
-        print(df_features.head())
-        print(df_features.tail())
-        pass
 
     def filter_cols(self, df, cols):
         return df[cols]
@@ -145,8 +137,8 @@ class FundDataHandler():
         frames = [df_fund, df_features]
         return pd.concat(frames, axis=1).sort_index(ascending=True)
 
-    def fund_profit_to_csv(self, df, path):
-        df = df.reset_index(level=['DATAYM'])
+    def fund_profit_to_csv(self, df, path, col):
+        df = df.reset_index(level=[col])
         df.to_csv(path, index=False)
 
     def seperate_train_test(self, df, date):
@@ -159,25 +151,39 @@ class FundDataHandler():
         df_validation = df[row_number:]
         return df_train, df_validation
 
-    def run(self):
+    def handle_features(self):
+        df_features = self.handle_features_date(self.df_features)
+        df_features = self.change_to_pct(self.df_features)
+        f_valid, f_invalid = self.check_first_date_valid(df_features, FIRST_DATE)
+        df_features = self.filter_cols(df_features, f_valid)
+        df_features = self.filter_date(df_features, FIRST_DATE, END_DATE)
+        return df_features
+    def handle_funds(self):
         df_fund = self.combine_fund_profit_by_pfid()
-        self.check_first_date_valid(df_fund, FIRST_DATE)
+        valid, invalid = self.check_first_date_valid(df_fund, FIRST_DATE)
+        df_fund = self.filter_cols(df_fund, valid)
         df_fund = self.filter_date(df_fund, FIRST_DATE, END_DATE)
-        df_train, df_validation = self.seperate_train_test(df_fund, BEGIN_DATE_FOR_TEST)
-        #res_fund = self.combine_fund_feature(df_fund, self.df_features)
-        self.fund_profit_to_csv(df_train, TRAIN_DATA)
-        self.fund_profit_to_csv(df_validation, VALIDATE_DATA)
-        print(df_train.head())
-        print(df_train.tail())
-        print(df_validation.head())
+        return df_fund
+ 
+
+    def run(self):
+        df_features = self.handle_features()
+        df_funds = self.handle_funds()
+
+        # Check index size the same
+        if len(df_features.index) != len(df_funds.index):
+            raise Exception('[ERROR] Index not the same')
+
+        # Seperate and save features
+        df_feature_train, df_feature_validation = self.seperate_train_test(df_features, BEGIN_DATE_FOR_TEST)
+        self.fund_profit_to_csv(df_feature_train, FEATURE_TRAIN_DATA, 'Date')
+        self.fund_profit_to_csv(df_feature_validation, FEATURE_VALIDATE_DATA, 'Date')
+
+        # Seperate and save funds
+        df_train, df_validation = self.seperate_train_test(df_funds, BEGIN_DATE_FOR_TEST)
+        self.fund_profit_to_csv(df_train, TRAIN_DATA, 'DATAYM')
+        self.fund_profit_to_csv(df_validation, VALIDATE_DATA, 'DATAYM')
 
 if __name__ == '__main__':
     fdh = FundDataHandler()
-    #print(fdh.df_features.head())
-    #print(fdh.df_features.tail())
-    #res = fdh.combine_fund_profit_by_pfid()
-    #print(res.head())
-    #fdh.fund_profit_to_csv(res, './out/test.csv')
-    #fdh.run()
-    fdh.handle_features()
-    #fdh.handle_features_date()
+    fdh.run()

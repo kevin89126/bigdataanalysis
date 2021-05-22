@@ -2,7 +2,9 @@
 FOLDER = './data/'
 TRAIN_DATA = FOLDER + 'funds_profit_train.csv'
 VALIDATE_DATA = FOLDER + 'funds_profit_validation.csv'
-FUND_FEATURES = FOLDER + 'features_1.csv'
+FEATURE_TRAIN_DATA = FOLDER + 'features_train.csv'
+FEATURE_VALIDATE_DATA = FOLDER + 'features_validation.csv'
+FUND_FEATURES = FOLDER + 'features_2.csv'
 FILES = ['Fund_RT_Monthly.csv']
 FILES_PATH = [FOLDER + FILE for FILE in FILES]
 FUND_DIV = FOLDER + 'Fund_DIV.csv'

@@ -18,15 +18,19 @@ from datetime import datetime
 from rlkit.torch.torch_rl_algorithm import TorchBatchRLAlgorithm
 import gtimer as gt
 
+from constants import TRAIN_DATA, VALIDATE_DATA, FEATURE_TRAIN_DATA, FEATURE_VALIDATE_DATA
+
 def load_dataset():
     current_folder = os.path.dirname(__file__)
-    ret_csv_train = os.path.join(current_folder, './data/investments_returns_train.csv')
-    ret_csv_val = os.path.join(current_folder, './data/investments_returns_validation.csv')
-    features_csv = os.path.join(current_folder, './data/features_v03.csv')
+    ret_csv_train = os.path.join(current_folder, TRAIN_DATA)
+    ret_csv_val = os.path.join(current_folder, VALIDATE_DATA)
+    features_csv_train = os.path.join(current_folder, FEATURE_TRAIN_DATA)
+    features_csv_val = os.path.join(current_folder, FEATURE_VALIDATE_DATA)
     df_ret_train = pd.read_csv(ret_csv_train, parse_dates=['Date'], index_col=['Date'])
     df_ret_val = pd.read_csv(ret_csv_val, parse_dates=['Date'], index_col=['Date'])
-    df_feature = pd.read_csv(features_csv, parse_dates=['Date'], index_col=['Date'])
-    return df_ret_train, df_ret_val, df_feature
+    df_feature_train = pd.read_csv(features_csv_train, parse_dates=['Date'], index_col=['Date'])
+    df_feature_val = pd.read_csv(features_csv_val, parse_dates=['Date'], index_col=['Date'])
+    return df_ret_train, df_ret_val, df_feature_train, df_feature_val
 
 
 gym.envs.register(id='MarketEnv-v0', entry_point='common.market_env:MarketEnv', max_episode_steps=1000)
@@ -43,14 +47,14 @@ def train_model(variant):
     eval_env_kwargs = variant['eval_env_kwargs']
     trainer_kwargs = variant['trainer_kwargs']
 
-    df_ret_train, df_ret_val, df_feature = load_dataset()
+    df_ret_train, df_ret_val, df_feature_train, df_feature_val = load_dataset()
     df_ret_train.to_csv(os.path.join(log_dir, 'df_ret_train.csv'))
     df_ret_val.to_csv(os.path.join(log_dir, 'df_ret_val.csv'))
     df_feature.to_csv(os.path.join(log_dir, 'df_feature.csv'))
-    expl_env = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_train, features=df_feature,
+    expl_env = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_train, features=df_feature_train,
                                          **expl_env_kwargs))
 
-    eval_env = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_val, features=df_feature,
+    eval_env = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_val, features=df_feature_val,
                                          **eval_env_kwargs))
 
     def post_epoch_func(self, epoch):
