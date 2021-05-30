@@ -225,7 +225,7 @@ class MarketEnv(gym.Env):
         #trade_days = (current_date-start_date).days
         # TODO
         # Monthly profit use 12 instead of 365?
-        cagr = math.pow(self.wealth, 12) - 1
+        cagr = math.pow(self.profit, 12) - 1
         if (self.episode == 1):
             std = 0
         else:
