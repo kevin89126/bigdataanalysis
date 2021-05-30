@@ -177,7 +177,7 @@ class MarketEnv(gym.Env):
         self.max_drawdown = max(self.max_drawdown, self.drawdown)
 
         # Use discount vactor 0.9
-        self.mean = self.mean +  (self.profit) * (0.9 ** self.episode))
+        self.mean = self.mean +  (self.profit * (0.9 ** self.episode))
         #self.mean = (self.mean * (self.episode-1) + self.profit)/self.episode
         self.mean_square = (self.mean_square * (self.episode-1) + self.profit ** 2)/self.episode
 
