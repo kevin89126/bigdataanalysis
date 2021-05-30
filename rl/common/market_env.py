@@ -222,10 +222,10 @@ class MarketEnv(gym.Env):
     def _get_info(self):
         start_date = self.returns.index[self.start_index]
         current_date = self.returns.index[self.current_index]
-        trade_days = (current_date-start_date).days
+        #trade_days = (current_date-start_date).days
         # TODO
         # Monthly profit use 12 instead of 365?
-        cagr = math.pow(self.wealth, 12/trade_days) - 1
+        cagr = math.pow(self.wealth, 12) - 1
         if (self.episode == 1):
             std = 0
         else:
@@ -235,17 +235,17 @@ class MarketEnv(gym.Env):
             std = k*(b-a**2)**0.5
 
         info = {
-            'trade_days': trade_days,
+        #    'trade_days': trade_days,
             'wealths': self.wealth,
-            'max_weath': self.max_weath,
+        #    'max_weath': self.max_weath,
             'cagr': cagr,
-            'std': std,
-            'mean': self.mean,
-            'mean_square': self.mean_square,
-            'mdd': self.max_drawdown,
+        #    'std': std,
+        #    'mean': self.mean,
+        #    'mean_square': self.mean_square,
+        #    'mdd': self.max_drawdown,
             'profit': self.profit,
             'reward': self.reward,
-            'dd': self.drawdown,
-            'episode': self.episode,
+        #    'dd': self.drawdown,
+        #    'episode': self.episode,
         }
         return info

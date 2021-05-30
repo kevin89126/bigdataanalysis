@@ -61,7 +61,7 @@ def train_model(variant):
     def post_epoch_func(self, epoch):
         progress_csv = os.path.join(log_dir, 'progress.csv')
         df = pd.read_csv(progress_csv)
-        kpis = ['cagr', 'dd', 'mdd', 'wealths','std']
+        kpis = ['mean']
         srcs = ['evaluation', 'exploration']
         n = 1
         for kpi in kpis:
@@ -136,7 +136,7 @@ variant = dict(
         trade_pecentage=1
     ),
     algorithm_kwargs=dict(
-        num_epochs=10,
+        num_epochs=1000,
         num_eval_steps_per_epoch=int(1000/fast_forward_scale),
         num_trains_per_train_loop=int(3000/fast_forward_scale),
         num_expl_steps_per_train_loop=int(1000/fast_forward_scale),
