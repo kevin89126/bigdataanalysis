@@ -61,7 +61,7 @@ def train_model(variant):
     def post_epoch_func(self, epoch):
         progress_csv = os.path.join(log_dir, 'progress.csv')
         df = pd.read_csv(progress_csv)
-        kpis = ['mean']
+        kpis = ['wealths','cagr','profit','reward']
         srcs = ['evaluation', 'exploration']
         n = 1
         for kpi in kpis:
