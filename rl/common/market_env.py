@@ -15,12 +15,12 @@ def proration_weights(action):
     return action / action.sum()
 
 
-def simple_return_reward(env):
+def simple_return_reward(env, **kwargs):
     reward = env.profit
     return reward
 
 
-def sharpe_ratio_reward(env):
+def sharpe_ratio_reward(env, **kwargs):
     r = env.profit
     a = env.mean
     b = env.mean_square
@@ -175,7 +175,10 @@ class MarketEnv(gym.Env):
         self.max_weath = max(self.wealth, self.max_weath)
         self.drawdown = max(0, (self.max_weath - self.wealth) / self.max_weath)
         self.max_drawdown = max(self.max_drawdown, self.drawdown)
-        self.mean = (self.mean * (self.episode-1) + self.profit)/self.episode
+
+        # Use discount vactor 0.9
+        self.mean = self.mean +  (self.profit) * (0.9 ** self.episode))
+        #self.mean = (self.mean * (self.episode-1) + self.profit)/self.episode
         self.mean_square = (self.mean_square * (self.episode-1) + self.profit ** 2)/self.episode
 
         info = self._get_info()
@@ -222,7 +225,7 @@ class MarketEnv(gym.Env):
         trade_days = (current_date-start_date).days
         # TODO
         # Monthly profit use 12 instead of 365?
-        cagr = math.pow(self.wealth, 365/trade_days) - 1
+        cagr = math.pow(self.wealth, 12/trade_days) - 1
         if (self.episode == 1):
             std = 0
         else:

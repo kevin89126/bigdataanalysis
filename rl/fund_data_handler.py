@@ -159,6 +159,7 @@ class FundDataHandler():
         df_features = self.filter_cols(df_features, f_valid)
         df_features = self.filter_date(df_features, FIRST_DATE, END_DATE)
         return df_features
+
     def handle_funds(self):
         df_fund = self.combine_fund_profit_by_pfid()
         valid, invalid = self.check_first_date_valid(df_fund, FIRST_DATE)
@@ -166,7 +167,6 @@ class FundDataHandler():
         df_fund = self.filter_date(df_fund, FIRST_DATE, END_DATE)
         return df_fund
  
-
     def run(self):
         df_features = self.handle_features()
         df_funds = self.handle_funds()
@@ -174,6 +174,9 @@ class FundDataHandler():
         # Check index size the same
         if len(df_features.index) != len(df_funds.index):
             raise Exception('[ERROR] Index not the same')
+
+        # Combine fund and feature
+        df_features = self.combine_fund_feature(df_funds, df_features)
 
         # Seperate and save features
         df_feature_train, df_feature_validation = self.seperate_train_test(df_features, BEGIN_DATE_FOR_TEST)

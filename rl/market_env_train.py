@@ -63,7 +63,7 @@ def train_model(variant):
         df = pd.read_csv(progress_csv)
         kpis = ['cagr', 'dd', 'mdd', 'wealths','std']
         srcs = ['evaluation', 'exploration']
-        n = 50
+        n = 1
         for kpi in kpis:
             series = map(lambda s: df[f'{s}/env_infos/final/{kpi} Mean'], srcs)
             plot_ma(series=series, lables=srcs, title=kpi, n=n)
@@ -115,28 +115,28 @@ variant = dict(
     expl_env_kwargs=dict(
         noise=0.3,
         state_scale=0.3,
-        reward_func=risk_adjusted_reward,
+        reward_func=simple_return_reward,
         reward_func_kwargs=dict(
             threshold=0.03,
             drop_only=False
         )
         ,
-        trade_freq='weeks',
+        trade_freq='months',
         trade_pecentage=0.2
     ),
     eval_env_kwargs=dict(
         noise=0,
         state_scale=0.3,
-        reward_func=risk_adjusted_reward,
+        reward_func=simple_return_reward,
         reward_func_kwargs=dict(
             threshold=0.03,
             drop_only=False
         ),
-        trade_freq='weeks',
+        trade_freq='months',
         trade_pecentage=1
     ),
     algorithm_kwargs=dict(
-        num_epochs=500,
+        num_epochs=10,
         num_eval_steps_per_epoch=int(1000/fast_forward_scale),
         num_trains_per_train_loop=int(3000/fast_forward_scale),
         num_expl_steps_per_train_loop=int(1000/fast_forward_scale),
