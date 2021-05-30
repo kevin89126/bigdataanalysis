@@ -4,7 +4,7 @@ import pandas as pd
 from constants import PERFORMANCEIDS, FOLDER, FILES, FILES_PATH, FUND_NAME_COL, \
     FUND_DIV, FUND_MONTH, FUND_FEATURES, FMFUNDCLASSINFOC_ID, DATE, PROFIT, PERFORMANCEID, \
     BEGIN_DATE_FOR_TEST, FIRST_DATE, TRAIN_DATA, VALIDATE_DATA, FUND_FEATURES, END_DATE, \
-    FEATURE_TRAIN_DATA, FEATURE_VALIDATE_DATA
+    FEATURE_TRAIN_DATA, FEATURE_VALIDATE_DATA, FUND_NUMBER
 
 
 class FundDataHandler():
@@ -163,8 +163,9 @@ class FundDataHandler():
     def handle_funds(self):
         df_fund = self.combine_fund_profit_by_pfid()
         valid, invalid = self.check_first_date_valid(df_fund, FIRST_DATE)
-        df_fund = self.filter_cols(df_fund, valid)
+        df_fund = self.filter_cols(df_fund, valid[:FUND_NUMBER])
         df_fund = self.filter_date(df_fund, FIRST_DATE, END_DATE)
+        print(df_fund.head())
         return df_fund
  
     def run(self):
