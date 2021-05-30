@@ -158,7 +158,9 @@ class MarketEnv(gym.Env):
         previous_investments = self.investments
 
         # invest all wealth to target investments
-        target_investments = self.wealth * self.weights
+        # Only use 1 as wealth
+        target_investments = self.weights
+        #target_investments = self.wealth * self.weights
 
         # todo add trading cost??
         self.investments = target_investments
@@ -166,8 +168,10 @@ class MarketEnv(gym.Env):
         inv_return = self.returns.iloc[self.current_index]
         previous_wealth = self.wealth
         # w_n = w_n-1 * (1+r)
-        self.wealth = np.dot(self.investments, (1 + inv_return))
-        self.profit = (self.wealth - previous_wealth)/previous_wealth
+        self.profit = np.dot(self.investments, (1 + inv_return))
+        #self.profit = (self.wealth - previous_wealth)/previous_wealth
+        self.wealth = self.wealth + self.profit
+
         # todo define new reward function
         reward = self.reward_func(self,**self.reward_func_kwargs)
         self.reward = reward
@@ -233,6 +237,8 @@ class MarketEnv(gym.Env):
             a = self.mean
             b = self.mean_square
             std = k*(b-a**2)**0.5
+        if self.current_index <= self.end_index:
+            self.wealth = 0
 
         info = {
         #    'trade_days': trade_days,
