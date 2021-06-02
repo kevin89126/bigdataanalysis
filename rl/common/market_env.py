@@ -204,6 +204,7 @@ class MarketEnv(gym.Env):
         self.mean = 0
         self.mean_square = 0
         self.episode = 0
+        self.profit = 0
         return self._get_state()
 
     def _get_state(self):
