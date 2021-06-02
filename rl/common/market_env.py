@@ -209,7 +209,7 @@ class MarketEnv(gym.Env):
 
     def _get_state(self):
         # Use profix as random noise
-        noise = np.random.normal(0, self.profit, self.observation_space.shape)
+        noise = np.random.normal(0, abs(self.profit), self.observation_space.shape)
         state = self.features.iloc[self.current_index].to_numpy()*self.state_scale
         state = state + noise
         np.clip(state, -1, 1, out=state)
