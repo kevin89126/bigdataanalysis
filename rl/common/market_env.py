@@ -23,18 +23,8 @@ def simple_return_reward(env, **kwargs):
 
 
 def sharpe_ratio_reward(env, **kwargs):
-    r = env.profit
-    a = env.mean
-    b = env.mean_square
-    if (b-a**2) == 0:
-        reward = 0
-    else:
-        sharpe_old = a/((b-a*2)*0.5)
-        eta = 0.06
-        a_new = a * (1-eta)+eta*r
-        b_new = b*(1-eta)+eta*r*r
-        sharpe_new = a_new/((b_new-a_new*2)*0.5)
-        reward = sharpe_new-sharpe_old
+    profit_std = np.array(env.profits).std()
+    reward = env.profit / profit_std
     return reward
 
 
@@ -167,8 +157,9 @@ class MarketEnv(gym.Env):
 
         # Get profit
         inv_return = self.returns.iloc[self.current_index]
+        self.profits = np.multiply(self.weights, (1 + inv_return)) - 1
         # w_n = w_n-1 * (1+r)
-        self.profit = np.dot(self.weights, (1 + inv_return)) - 1
+        self.profit = self.profits.sum()
 
         # Get current wealth after investment
         self.wealth = self.wealth * (1 + self.profit)
@@ -209,8 +200,14 @@ class MarketEnv(gym.Env):
 
     def _get_state(self):
         # Use profix as random noise
-        noise = np.random.normal(0, abs(self.profit), self.observation_space.shape)
+        #noise = np.random.normal(0, abs(self.profit), self.observation_space.shape)
+
+        noise = []
         state = self.features.iloc[self.current_index].to_numpy()*self.state_scale
+        for s in state:
+            n = np.random.normal(0, abs(s/10))
+            noise.append(n)
+ 
         state = state + noise
         np.clip(state, -1, 1, out=state)
         if (state.shape != self.observation_space.shape):
