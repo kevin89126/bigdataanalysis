@@ -62,7 +62,7 @@ def train_model(variant):
         progress_csv = os.path.join(log_dir, 'progress.csv')
         df = pd.read_csv(progress_csv)
         final_kpis = ['wealths']
-        mean_kpis = ['profit']
+        mean_kpis = ['profit','reward']
         srcs = ['evaluation', 'exploration']
         n = 1
 

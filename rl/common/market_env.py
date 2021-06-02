@@ -157,7 +157,7 @@ class MarketEnv(gym.Env):
 
         # Get profit
         inv_return = self.returns.iloc[self.current_index]
-        self.profits = np.multiply(self.weights, (1 + inv_return)) - 1
+        self.profits = np.multiply(self.weights, inv_return)
         # w_n = w_n-1 * (1+r)
         self.profit = self.profits.sum()
 
