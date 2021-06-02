@@ -9,6 +9,8 @@ from random import uniform
 from pandas import DataFrame
 
 
+INIT_WEALTH = 1000000
+
 def proration_weights(action):
     if action.sum() == 0:
         action = np.random.rand(*action.shape)
@@ -158,32 +160,22 @@ class MarketEnv(gym.Env):
         previous_investments = self.investments
 
         # invest all wealth to target investments
-        # Only use 1 as wealth
         target_investments = self.weights
-        #target_investments = self.wealth * self.weights
 
-        # todo add trading cost??
-        self.investments = target_investments
+        # Investment
+        invest_wealth = round(self.wealth * 0.8)
 
+        # Get profit
         inv_return = self.returns.iloc[self.current_index]
-        previous_wealth = self.wealth
         # w_n = w_n-1 * (1+r)
-        self.profit = np.dot(self.investments, (1 + inv_return))
-        #self.profit = (self.wealth - previous_wealth)/previous_wealth
-        self.wealth = self.wealth + self.profit
+        self.profit = np.dot(self.weights, (1 + inv_return)) - 1
 
-        # todo define new reward function
+        # Get current wealth after investment
+        self.wealth = self.wealth * (1 + self.profit)
+
+        # Return reward
         reward = self.reward_func(self,**self.reward_func_kwargs)
         self.reward = reward
-
-        self.max_weath = max(self.wealth, self.max_weath)
-        self.drawdown = max(0, (self.max_weath - self.wealth) / self.max_weath)
-        self.max_drawdown = max(self.max_drawdown, self.drawdown)
-
-        # Use discount vactor 0.9
-        self.mean = self.mean +  (self.profit * (0.9 ** self.episode))
-        #self.mean = (self.mean * (self.episode-1) + self.profit)/self.episode
-        self.mean_square = (self.mean_square * (self.episode-1) + self.profit ** 2)/self.episode
 
         info = self._get_info()
         state = self._get_state()
@@ -206,7 +198,7 @@ class MarketEnv(gym.Env):
         self.current_index = self.start_index
         self.investments = np.zeros(self.investments_count)
         self.weights = np.zeros(self.investments_count)
-        self.wealth = 1
+        self.wealth = INIT_WEALTH
         self.max_weath = self.wealth
         self.max_drawdown = 0
         self.mean = 0
@@ -215,7 +207,8 @@ class MarketEnv(gym.Env):
         return self._get_state()
 
     def _get_state(self):
-        noise = np.random.normal(0, self.noise, self.observation_space.shape)
+        # Use profix as random noise
+        noise = np.random.normal(0, self.profit, self.observation_space.shape)
         state = self.features.iloc[self.current_index].to_numpy()*self.state_scale
         state = state + noise
         np.clip(state, -1, 1, out=state)
@@ -237,8 +230,6 @@ class MarketEnv(gym.Env):
             a = self.mean
             b = self.mean_square
             std = k*(b-a**2)**0.5
-        if self.current_index <= self.end_index:
-            self.wealth = 0
 
         info = {
         #    'trade_days': trade_days,

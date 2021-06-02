@@ -61,10 +61,18 @@ def train_model(variant):
     def post_epoch_func(self, epoch):
         progress_csv = os.path.join(log_dir, 'progress.csv')
         df = pd.read_csv(progress_csv)
-        kpis = ['wealths','cagr','profit','reward']
+        final_kpis = ['wealths']
+        mean_kpis = ['profit']
         srcs = ['evaluation', 'exploration']
         n = 1
-        for kpi in kpis:
+
+        for kpi in mean_kpis:
+            series = map(lambda s: df[f'{s}/env_infos/{kpi} Mean'], srcs)
+            plot_ma(series=series, lables=srcs, title=kpi, n=n)
+            plt.savefig(os.path.join(log_dir, f'{kpi}.png'))
+            plt.close()
+
+        for kpi in final_kpis:
             series = map(lambda s: df[f'{s}/env_infos/final/{kpi} Mean'], srcs)
             plot_ma(series=series, lables=srcs, title=kpi, n=n)
             plt.savefig(os.path.join(log_dir, f'{kpi}.png'))
@@ -101,6 +109,7 @@ def train_model(variant):
 
 
 ptu.set_gpu_mode(True)
+#ptu.set_gpu_mode(False)
 
 fast_forward_scale = 1
 
@@ -114,7 +123,7 @@ variant = dict(
     ),
     expl_env_kwargs=dict(
         noise=0.3,
-        state_scale=0.3,
+        state_scale=1,
         reward_func=simple_return_reward,
         reward_func_kwargs=dict(
             threshold=0.03,
@@ -126,7 +135,7 @@ variant = dict(
     ),
     eval_env_kwargs=dict(
         noise=0,
-        state_scale=0.3,
+        state_scale=1,
         reward_func=simple_return_reward,
         reward_func_kwargs=dict(
             threshold=0.03,
@@ -136,7 +145,7 @@ variant = dict(
         trade_pecentage=1
     ),
     algorithm_kwargs=dict(
-        num_epochs=1000,
+        num_epochs=100,
         num_eval_steps_per_epoch=int(1000/fast_forward_scale),
         num_trains_per_train_loop=int(3000/fast_forward_scale),
         num_expl_steps_per_train_loop=int(1000/fast_forward_scale),
@@ -146,8 +155,5 @@ variant = dict(
     )
 )
 
-for threshold in (0.002,0.007):
-    variant['eval_env_kwargs']['reward_func_kwargs']['threshold'] = threshold
-    variant['expl_env_kwargs']['reward_func_kwargs']['threshold'] = threshold
-    train_model(variant)
+train_model(variant)
 
