@@ -23,8 +23,11 @@ def simple_return_reward(env, **kwargs):
 
 
 def sharpe_ratio_reward(env, **kwargs):
-    profit_std = np.array(env.profits).std()
-    reward = env.profit / profit_std
+    profit_min = abs(np.array(env.profits).min())
+    if env.profit <= 0:
+        reward = env.profit * profit_min
+    else:
+        reward = env.profit / profit_min
     return reward
 
 
