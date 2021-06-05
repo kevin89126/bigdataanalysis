@@ -81,7 +81,7 @@ class MarketEnv(gym.Env):
                  noise=0,
                  state_scale=1,
                  trade_pecentage=0.1):
-        self._load_data(returns=returns, features=features, show_info=show_info, trade_freq=trade_freq)
+        self._load_data(raw_data=raw_data, returns=returns, features=features, show_info=show_info, trade_freq=trade_freq)
         self._init_action_space()
         self._init_observation_space()
         self.trade_pecentage = trade_pecentage
@@ -94,7 +94,7 @@ class MarketEnv(gym.Env):
         self.seed()
         self.reset()
 
-    def _load_data(self, returns: DataFrame, features: DataFrame, show_info, trade_freq):
+    def _load_data(self, raw_data: DataFrame, returns: DataFrame, features: DataFrame, show_info, trade_freq):
         #resample_rules = {
         #    'days': 'D',
         #    'weeks': 'W',

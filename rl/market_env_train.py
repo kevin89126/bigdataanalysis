@@ -55,7 +55,7 @@ def train_model(variant):
     eval_env_kwargs = variant['eval_env_kwargs']
     trainer_kwargs = variant['trainer_kwargs']
 
-    df_ret_train, df_ret_val, df_feature_train, df_feature_val = load_dataset()
+    df_ret_train, df_ret_val, df_feature_train, df_feature_val, df_raw_data_train, df_raw_data_val = load_dataset()
     df_ret_train.to_csv(os.path.join(log_dir, 'df_ret_train.csv'))
     df_ret_val.to_csv(os.path.join(log_dir, 'df_ret_val.csv'))
     df_feature_train.to_csv(os.path.join(log_dir, 'df_feature_train.csv'))
