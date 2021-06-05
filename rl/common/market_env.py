@@ -41,22 +41,22 @@ def risk_adjusted_reward(env, threshold: float=float("inf"), drop_only: bool = F
 def get_max_drawdown(env, df, period_start_date, current_date):
     res = []
     cur_df = df[period_start_date:current_date]
-    if period_start_date == current_date:
-        return 1
     for i in cur_df:
         # From max to find min
         _max = cur_df[i].max()
         _idx_max = cur_df[i].idxmax()
         _min = cur_df[i][_idx_max:].min()
-        mdd_max_min = (_max - _min) / _max
+        mdd_max_min = (_min - _max) / _max
         
         # From min to find max
         _min = cur_df[i].min()
         _idx_min = cur_df[i].idxmin()
         _max = cur_df[i][:_idx_min].max()
-        mdd_min_max = (_max - _min) / _max
-        mdd = max(mdd_max_min, mdd_min_max)
-        
+        mdd_min_max = (_min - _max) / _max
+
+        mdd = abs(max(mdd_max_min, mdd_min_max)) * 100
+        if mdd == 0:
+            mdd = 1
         res.append(mdd)
     return res
 
