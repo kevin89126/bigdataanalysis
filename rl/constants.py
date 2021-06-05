@@ -4,22 +4,41 @@ TRAIN_DATA = FOLDER + 'funds_profit_train.csv'
 VALIDATE_DATA = FOLDER + 'funds_profit_validation.csv'
 FEATURE_TRAIN_DATA = FOLDER + 'features_train.csv'
 FEATURE_VALIDATE_DATA = FOLDER + 'features_validation.csv'
+RAW_TRAIN_DATA = FOLDER + 'raw_train.csv'
+RAW_VALIDATE_DATA = FOLDER + 'raw_validation.csv'
+
+# Source data
 FUND_FEATURES = FOLDER + 'features_2.csv'
 FILES = ['Fund_RT_Monthly.csv']
 FILES_PATH = [FOLDER + FILE for FILE in FILES]
 FUND_DIV = FOLDER + 'Fund_DIV.csv'
 FUND_MONTH = FOLDER + 'Fund_RT_Monthly.csv'
+RAW_DATA = FOLDER + 'prdPrice.csv'
 
 # FUND DATA
 FUND_NUMBER = 10
-BEGIN_DATE_FOR_TEST = '2016-01-01'
-FIRST_DATE = '2003-01-01'
+BEGIN_DATE_FOR_TEST = '2019-01-01'
+#FIRST_DATE = '2003-01-01'
+FIRST_DATE = '2011-05-01'
 END_DATE = '2020-05-01'
 FUND_NAME_COL = ['Date','FMFUNDCLASSINFOC_ID','Current','Profit','Currency']
 FMFUNDCLASSINFOC_ID = 'FMFUNDCLASSINFOC_ID'
 DATE = 'Date'
 PROFIT = 'Profit'
 PERFORMANCEID = 'ISINCODE'
+FUND_LIST = [
+    'LU0065014192',
+    'LU0156897901',
+    'TW000T0708Y5',
+    'TW000T0716Y8',
+    'TW000T0717Y6',
+    'TW000T0718Y4',
+    'TW000T0911Y5',
+    'TW000T1110Y3',
+    'TW000T1615Y1',
+    'TW000T4719Y8'
+]
+
 PERFORMANCEIDS = [
     #'TW000T4719Y8',
     #'TW000T4807Y1',

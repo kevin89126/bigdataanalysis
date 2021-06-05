@@ -41,6 +41,28 @@ def risk_adjusted_reward(env, threshold: float=float("inf"), drop_only: bool = F
 
     return reward
 
+def get_max_drawdown(env, df, period_start_date, current_date):
+    res = []
+    cur_df = df[period_start_date:current_date]
+    if period_start_date == current_date:
+        return 1
+    for i in cur_df:
+        # From max to find min
+        _max = cur_df[i].max()
+        _idx_max = cur_df[i].idxmax()
+        _min = cur_df[i][_idx_max:].min()
+        mdd_max_min = _max - _min
+        
+        # From min to find max
+        _min = cur_df[i].min()
+        _idx_min = cur_df[i].idxmin()
+        _max = cur_df[i][:_idx_min].max()
+        mdd_min_max = _max - _min
+        mdd = max(mdd_max_min, mdd_min_max)
+        
+        res.append(mdd)
+    return res
+
 
 def resample_backfill(df, rule):
     return df.apply(lambda x: 1+x).resample(rule).backfill()
@@ -52,7 +74,7 @@ def resample_relative_changes(df, rule):
 
 class MarketEnv(gym.Env):
 
-    def __init__(self, returns: DataFrame, features: DataFrame, show_info=False, trade_freq='days',
+    def __init__(self, raw_data: DataFrame, returns: DataFrame, features: DataFrame, show_info=False, trade_freq='days',
                  action_to_weights_func=proration_weights,
                  reward_func=simple_return_reward,
                  reward_func_kwargs=dict(),
@@ -89,6 +111,7 @@ class MarketEnv(gym.Env):
         # make sure dataframes are sorted
         returns = returns.sort_index().sort_index(axis=1)
         features = features.sort_index().sort_index(axis=1)
+        raw_data = raw_data.sort_index().sort_index(axis=1)
 
         #features = resample_backfill(features, resample_rules[trade_freq]).dropna()
         # TODO no need to change
@@ -107,6 +130,7 @@ class MarketEnv(gym.Env):
         #returns = returns[(returns.index.isin(features.index))]
         self.features = features
         self.returns = returns
+        self.raw_data = raw_data
         if show_info:
             sd = returns.index[0]
             ed = returns.index[-1]

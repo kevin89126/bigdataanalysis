@@ -1,19 +1,34 @@
 import os
 from datetime import datetime
 import pandas as pd
-from constants import PERFORMANCEIDS, FOLDER, FILES, FILES_PATH, FUND_NAME_COL, \
+from constants import FUND_LIST, FOLDER, FILES, FILES_PATH, FUND_NAME_COL, \
     FUND_DIV, FUND_MONTH, FUND_FEATURES, FMFUNDCLASSINFOC_ID, DATE, PROFIT, PERFORMANCEID, \
     BEGIN_DATE_FOR_TEST, FIRST_DATE, TRAIN_DATA, VALIDATE_DATA, FUND_FEATURES, END_DATE, \
-    FEATURE_TRAIN_DATA, FEATURE_VALIDATE_DATA, FUND_NUMBER
+    FEATURE_TRAIN_DATA, FEATURE_VALIDATE_DATA, FUND_NUMBER, RAW_TRAIN_DATA, \
+    RAW_VALIDATE_DATA, RAW_DATA
 
 
 class FundDataHandler():
 
     def __init__(self):
         #self.df_fund_div = pd.read_csv(FUND_DIV)
+        self.df_raw = pd.read_csv(RAW_DATA)
         self.df_fund = pd.read_csv(FUND_MONTH)
         self.df_features = pd.read_csv(FUND_FEATURES)
         self.df_features = self.df_features.drop(columns=['index'])
+        self.fund_list = FUND_LIST
+
+    def get_raw_data(self):
+        frames = []
+        for f in self.fund_list:
+            df_tmp = self.df_raw[self.df_raw['ISIN_CDE'] == f ]
+            df_tmp_price = df_tmp['SELL_PRICE']
+            df_tmp_price.index = df_tmp['PRICE_DATE']
+            df_tmp_price.index.name = 'Date'
+            frames.append(df_tmp_price)
+        df_res =  pd.concat(frames, axis=1).sort_index(ascending=True)
+        df_res.columns = self.fund_list
+        return df_res
 
     def handle_features_date(self, df):
         # Change Date to 'xxxx-xx-01'
@@ -94,12 +109,16 @@ class FundDataHandler():
         return df_res
 
     def filter_date(self, df, first_date, end_date):
-        try:
-            first_row_number = df.index.get_loc(first_date)
-            end_row_number = df.index.get_loc(end_date)
-        except:
-            raise Exception('[ERROR] Cannot find {} or {} in index'.format(first_date, end_date))
-        return df[first_row_number:end_row_number+1]
+        return df[first_date:end_date]
+        #try:
+        #    first_row_number = df.index.get_loc(first_date)
+        #    end_row_number = df.index.get_loc(end_date)
+        #except:
+        #    raise Exception('[ERROR] Cannot find {} or {} in index'.format(first_date, end_date))
+        #return df[first_row_number:end_row_number+1]
+
+    def get_date_between(self, df, first_date, end_date):
+        return df[first_row_number:end_row_number]
 
     def check_first_date_valid(self, df, date):
         res_valid = []
@@ -121,7 +140,7 @@ class FundDataHandler():
         frames = []
         performance_ids = []
         ids = []
-        for _id in PERFORMANCEIDS:
+        for _id in self.fund_list:
             try:
                 df_profit = self.get_fund_profit_by_pfid(_id)
             except:
@@ -144,12 +163,12 @@ class FundDataHandler():
 
     def seperate_train_test(self, df, date):
         # data format str 2021-04-28
-        try:
-            row_number = df.index.get_loc(date)
-        except:
-            raise Exception('[ERROR] Cannot find {} in index'.format(date))
-        df_train = df[:row_number]
-        df_validation = df[row_number:]
+        #try:
+        #    row_number = df.index.get_loc(date)
+        #except:
+        #    raise Exception('[ERROR] Cannot find {} in index'.format(date))
+        df_train = df[:date]
+        df_validation = df[date:]
         return df_train, df_validation
 
     def handle_features(self):
@@ -165,12 +184,20 @@ class FundDataHandler():
         valid, invalid = self.check_first_date_valid(df_fund, FIRST_DATE)
         df_fund = self.filter_cols(df_fund, valid[:FUND_NUMBER])
         df_fund = self.filter_date(df_fund, FIRST_DATE, END_DATE)
-        print(df_fund.head())
         return df_fund
- 
+
+    def handle_raw(self):
+        df_raw = self.get_raw_data()
+        valid, invalid = self.check_first_date_valid(df_raw, FIRST_DATE)
+        df_raw = self.filter_cols(df_raw, valid[:FUND_NUMBER])
+        df_raw = self.filter_date(df_raw, FIRST_DATE, END_DATE)
+        return df_raw
+
+
     def run(self):
         df_features = self.handle_features()
         df_funds = self.handle_funds()
+        df_raw = self.handle_raw()
 
         # Check index size the same
         if len(df_features.index) != len(df_funds.index):
@@ -178,6 +205,11 @@ class FundDataHandler():
 
         # Combine fund and feature
         df_features = self.combine_fund_feature(df_funds, df_features)
+
+        # Seperate and save raw
+        df_raw_train, df_raw_validation = self.seperate_train_test(df_raw, BEGIN_DATE_FOR_TEST)
+        self.fund_profit_to_csv(df_raw_train, RAW_TRAIN_DATA, 'Date')
+        self.fund_profit_to_csv(df_raw_validation, RAW_VALIDATE_DATA, 'Date')
 
         # Seperate and save features
         df_feature_train, df_feature_validation = self.seperate_train_test(df_features, BEGIN_DATE_FOR_TEST)
