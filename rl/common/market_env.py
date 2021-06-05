@@ -24,7 +24,7 @@ def simple_return_reward(env, **kwargs):
 
 def sharpe_ratio_reward(env, **kwargs):
     profits = np.array(env.profits) + 1 
-    mdds = abs(np.array(env.mdd))
+    mdds = abs(np.array(env.mdds))
     reward = np.divide(profits, mdds)
     return reward
 
