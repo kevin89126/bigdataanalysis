@@ -28,6 +28,7 @@ class FundDataHandler():
             frames.append(df_tmp_price)
         df_res =  pd.concat(frames, axis=1).sort_index(ascending=True)
         df_res.columns = self.fund_list
+        df_res.index.name = 'Date'
         return df_res
 
     def handle_features_date(self, df):
