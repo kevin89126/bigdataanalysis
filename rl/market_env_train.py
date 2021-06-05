@@ -65,7 +65,7 @@ def train_model(variant):
     expl_env = NormalizedBoxEnv(gym.make('MarketEnv-v0', raw_data=df_raw_data_train, returns=df_ret_train, features=df_feature_train,
                                          **expl_env_kwargs))
 
-    eval_env = NormalizedBoxEnv(gym.make('MarketEnv-v0', df_raw_data_val, returns=df_ret_val, features=df_feature_val,
+    eval_env = NormalizedBoxEnv(gym.make('MarketEnv-v0', raw_data=df_raw_data_val, returns=df_ret_val, features=df_feature_val,
                                          **eval_env_kwargs))
 
     def post_epoch_func(self, epoch):
