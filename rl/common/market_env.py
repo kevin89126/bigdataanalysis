@@ -23,13 +23,10 @@ def simple_return_reward(env, **kwargs):
 
 
 def sharpe_ratio_reward(env, **kwargs):
-    profit_min = abs(np.array(env.profits).min())
-    if env.profit <= 0:
-        reward = env.profit * profit_min
-    else:
-        reward = env.profit / profit_min
+    profits = np.array(env.profits) + 1 
+    mdds = abs(np.array(env.mdd))
+    reward = np.divide(profits, mdds)
     return reward
-
 
 def risk_adjusted_reward(env, threshold: float=float("inf"), drop_only: bool = False):
     reward = env.profit
@@ -51,13 +48,13 @@ def get_max_drawdown(env, df, period_start_date, current_date):
         _max = cur_df[i].max()
         _idx_max = cur_df[i].idxmax()
         _min = cur_df[i][_idx_max:].min()
-        mdd_max_min = _max - _min
+        mdd_max_min = (_max - _min) / _max
         
         # From min to find max
         _min = cur_df[i].min()
         _idx_min = cur_df[i].idxmin()
         _max = cur_df[i][:_idx_min].max()
-        mdd_min_max = _max - _min
+        mdd_min_max = (_max - _min) / _max
         mdd = max(mdd_max_min, mdd_min_max)
         
         res.append(mdd)
@@ -173,6 +170,11 @@ class MarketEnv(gym.Env):
         self.weights = self.action_to_weights_func(action)
         self.episode += 1
         self.current_index += 1
+
+        previous_date = self.returns.index[self.current_index - 1]
+        current_date = self.returns.index[self.current_index]
+        self.mdds = get_max_drawdown(self, self.raw_data, previous_date, current_date)
+
         # update investments and wealth
         previous_investments = self.investments
 
