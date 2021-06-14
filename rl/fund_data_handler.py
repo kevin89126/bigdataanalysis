@@ -176,6 +176,7 @@ class FundDataHandler():
         frames = df_list
         df_res = pd.concat(frames, axis=1).sort_index(ascending=True)
         df_res.index.name = 'Date'
+        df_res = df_res.ffill().fillna(df_res.mean())
         return df_res
 
     def fund_profit_to_csv(self, df, path, col):
