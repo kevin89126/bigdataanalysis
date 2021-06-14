@@ -10,6 +10,7 @@ from pandas import DataFrame
 
 
 INIT_WEALTH = 1000000
+MONTHS = 3
 
 def proration_weights(action):
     if action.sum() == 0:
@@ -24,7 +25,11 @@ def simple_return_reward(env, **kwargs):
 
 def sharpe_ratio_reward(env, **kwargs):
     # Get privious 3 months
-    previous_date = env.returns.index[env.current_index]
+    try:
+        previous_date = env.returns.index[env.current_index - MONTHS]
+    except:
+        print('[WARNING] pervious data index error, use current data instead')
+        previous_date = env.returns.index[env.current_index]
     current_date = env.returns.index[env.current_index]
     df_std =  env.returns[previous_date:current_date].std()
     df_std[df_std < 0.01] = 0.01
