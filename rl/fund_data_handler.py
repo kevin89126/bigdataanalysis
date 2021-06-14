@@ -33,7 +33,8 @@ class FundDataHandler():
         df_res.index.name = 'Date'
         df_res = df_res.sort_index(ascending=True)
         #df_res = df_res.drop(columns=['Date'],axis=1)
-        return df_res.ffill()
+        df_res = df_res.ffill().fillna(df_res.mean())
+        return df_res
 
     def get_raw_data(self):
         frames = []
