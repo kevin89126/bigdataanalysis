@@ -5,7 +5,7 @@ from constants import FUND_LIST, FOLDER, FILES, FILES_PATH, FUND_NAME_COL, \
     FUND_DIV, FUND_MONTH, FUND_FEATURES, FMFUNDCLASSINFOC_ID, DATE, PROFIT, PERFORMANCEID, \
     BEGIN_DATE_FOR_TEST, FIRST_DATE, TRAIN_DATA, VALIDATE_DATA, FUND_FEATURES, END_DATE, \
     FEATURE_TRAIN_DATA, FEATURE_VALIDATE_DATA, FUND_NUMBER, RAW_TRAIN_DATA, \
-    RAW_VALIDATE_DATA, RAW_DATA
+    RAW_VALIDATE_DATA, RAW_DATA, NEWS_DATA
 
 
 class FundDataHandler():
@@ -15,8 +15,25 @@ class FundDataHandler():
         self.df_raw = pd.read_csv(RAW_DATA)
         self.df_fund = pd.read_csv(FUND_MONTH)
         self.df_features = pd.read_csv(FUND_FEATURES)
+        self.df_news = pd.read_csv(NEWS_DATA)
         self.df_features = self.df_features.drop(columns=['index'])
         self.fund_list = FUND_LIST
+
+    def get_news_data(self, df):
+        dates = list(set(df['Date']))
+        vals = []
+        for date in dates:
+            val = df[df['Date'] == date]['label'].mean()
+            vals.append(val)
+        max_val = abs(max(vals, key=abs)) + 1
+        vals = [val / max_val for val in vals]
+        d = {'NEWS': vals}
+        df_res = pd.DataFrame(data=d)
+        df_res.index = dates
+        df_res.index.name = 'Date'
+        df_res = df_res.sort_index(ascending=True)
+        #df_res = df_res.drop(columns=['Date'],axis=1)
+        return df_res.ffill()
 
     def get_raw_data(self):
         frames = []
@@ -31,9 +48,9 @@ class FundDataHandler():
         df_res.index.name = 'Date'
         return df_res
 
-    def handle_features_date(self, df):
+    def handle_date(self, df, index):
         # Change Date to 'xxxx-xx-01'
-        dates = df['Date']
+        dates = df[index]
         new_dates = []
         for date in dates:
             #print(date.split('-')[-1])
@@ -48,7 +65,7 @@ class FundDataHandler():
                     n_m = str(1).zfill(2)
                 else:
                     n_m = str((int(m) + 1)).zfill(2)
-            new_date = '-'.join([n_y,n_m,n_d])
+            new_date = '-'.join([n_y,n_m.zfill(2),n_d.zfill(2)])
             new_dates.append(new_date)
         df['Date'] = new_dates
         return df
@@ -154,8 +171,8 @@ class FundDataHandler():
         df_res.index.name = 'Date'
         return df_res
 
-    def combine_fund_feature(self, df_fund, df_features):
-        frames = [df_fund, df_features]
+    def combine_df(self, df_list):
+        frames = df_list
         return pd.concat(frames, axis=1).sort_index(ascending=True)
 
     def fund_profit_to_csv(self, df, path, col):
@@ -172,8 +189,16 @@ class FundDataHandler():
         df_validation = df[date:]
         return df_train, df_validation
 
+    def handle_news(self):
+        df_news = self.handle_date(self.df_news, 'date')
+        df_news = self.get_news_data(df_news)
+        f_valid, f_invalid = self.check_first_date_valid(df_news, FIRST_DATE)
+        df_news = self.filter_cols(df_news, f_valid)
+        df_news = self.filter_date(df_news, FIRST_DATE, END_DATE)
+        return df_news
+
     def handle_features(self):
-        df_features = self.handle_features_date(self.df_features)
+        df_features = self.handle_date(self.df_features, 'Date')
         df_features = self.change_to_pct(self.df_features)
         f_valid, f_invalid = self.check_first_date_valid(df_features, FIRST_DATE)
         df_features = self.filter_cols(df_features, f_valid)
@@ -199,13 +224,15 @@ class FundDataHandler():
         df_features = self.handle_features()
         df_funds = self.handle_funds()
         df_raw = self.handle_raw()
+        df_news = self.handle_news()
 
         # Check index size the same
         if len(df_features.index) != len(df_funds.index):
             raise Exception('[ERROR] Index not the same')
 
         # Combine fund and feature
-        df_features = self.combine_fund_feature(df_funds, df_features)
+        df_features = self.combine_df([df_funds, df_features, df_news])
+        print(df_features.head())
 
         # Seperate and save raw
         df_raw_train, df_raw_validation = self.seperate_train_test(df_raw, BEGIN_DATE_FOR_TEST)
@@ -222,6 +249,11 @@ class FundDataHandler():
         self.fund_profit_to_csv(df_train, TRAIN_DATA, 'Date')
         self.fund_profit_to_csv(df_validation, VALIDATE_DATA, 'Date')
 
+    def test(self):
+        df_news = self.handle_news()
+        print(df_news['NEWS'].isnull().values.any())
+
 if __name__ == '__main__':
     fdh = FundDataHandler()
     fdh.run()
+    #fdh.test()

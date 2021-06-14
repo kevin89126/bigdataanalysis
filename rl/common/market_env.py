@@ -23,6 +23,15 @@ def simple_return_reward(env, **kwargs):
 
 
 def sharpe_ratio_reward(env, **kwargs):
+    # Get privious 3 months
+    previous_date = env.returns.index[env.current_index]
+    current_date = env.returns.index[env.current_index]
+    df_std =  env.returns[previous_date:current_date].std()
+    df_std[df_std < 0.01] = 0.01
+    reward = np.divide(env.profits, df_std).sum()
+    return reward
+
+def get_max_drawdown_reward(evn, ** kewargs):
     profits = np.array(env.profits) + 1 
     mdds = abs(np.array(env.mdds))
     reward = np.divide(profits, mdds).sum()
@@ -171,10 +180,6 @@ class MarketEnv(gym.Env):
         self.episode += 1
         self.current_index += 1
 
-        previous_date = self.returns.index[self.current_index - 1]
-        current_date = self.returns.index[self.current_index]
-        self.mdds = get_max_drawdown(self, self.raw_data, previous_date, current_date)
-
         # update investments and wealth
         previous_investments = self.investments
 
@@ -206,10 +211,10 @@ class MarketEnv(gym.Env):
 
     def reset(self):
         total_index_count = len(self.returns.index)
-        last_index = total_index_count-2
+        last_index = total_index_count
         #if (self.trade_pecentage >= 1):
         self.start_index = 0
-        self.end_index = last_index
+        self.end_index = last_index - 2
         #else:
         #    self.start_index = np.random.randint(low=0, high=last_index*(1-self.trade_pecentage))
         #    self.end_index = int(self.start_index + total_index_count*self.trade_pecentage)
