@@ -173,7 +173,9 @@ class FundDataHandler():
 
     def combine_df(self, df_list):
         frames = df_list
-        return pd.concat(frames, axis=1).sort_index(ascending=True)
+        df_res = pd.concat(frames, axis=1).sort_index(ascending=True)
+        df_res.index.name = 'Date'
+        return df_res
 
     def fund_profit_to_csv(self, df, path, col):
         df = df.reset_index(level=[col])
