@@ -118,8 +118,8 @@ def train_model(variant):
     algorithm.train()
 
 
-#ptu.set_gpu_mode(True)
-ptu.set_gpu_mode(False)
+ptu.set_gpu_mode(True)
+#ptu.set_gpu_mode(False)
 
 fast_forward_scale = 1
 
