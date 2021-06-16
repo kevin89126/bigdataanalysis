@@ -228,11 +228,12 @@ class MarketEnv(gym.Env):
 
         # Return reward
         reward = self.reward_func(self,**self.reward_func_kwargs)
-        self.reward = reward
+        self.rewards.append(reward)
+        self.reward = sum(self.rewards)
 
         info = self._get_info()
         state = self._get_state()
-        return state, reward, done, info
+        return state, self.reward, done, info
 
     def render(self):
         pass
@@ -258,6 +259,7 @@ class MarketEnv(gym.Env):
         self.mean_square = 0
         self.episode = 0
         self.profit = 0
+        self.rewards = []
         return self._get_state()
 
     def _get_state(self):
