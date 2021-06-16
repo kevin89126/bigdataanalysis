@@ -85,7 +85,7 @@ def action_fund_info(env):
 def init_invest_df(base_df):
     index = base_df.index
     cloumns = base_df.columns
-    data = array([np.arange(len(index))]*len(cloumns))
+    data = np.array([np.arange(len(index))]*len(cloumns))
     df = pd.DataFrame(data, index=index, columns=columns)
     return df
 
@@ -122,7 +122,7 @@ class MarketEnv(gym.Env):
         self.reward_func_kwargs = reward_func_kwargs
         self.noise = noise
         self.state_scale = state_scale
-        self.invest_df = init_invest_df(returns)
+        #self.invest_df = init_invest_df(returns)
         self.seed()
         self.reset()
 
@@ -206,7 +206,7 @@ class MarketEnv(gym.Env):
         self.episode += 1
         self.current_index += 1
 
-        self.update_invest_df(self.invest_df, )
+        #self.update_invest_df(self.invest_df, )
 
         # update investments and wealth
         previous_investments = self.investments
