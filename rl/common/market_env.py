@@ -25,15 +25,15 @@ def simple_return_reward(env, **kwargs):
 
 def sharpe_ratio_reward(env, **kwargs):
     # Get privious 3 months
-    try:
-        previous_date = env.returns.index[env.current_index - MONTHS]
-    except:
-        print('[WARNING] pervious data index error, use current data instead')
-        previous_date = env.returns.index[env.current_index]
-    current_date = env.returns.index[env.current_index]
-    df_std =  env.returns[previous_date:current_date].std()
-    df_std[df_std < 0.01] = 0.01
-    reward = np.divide(env.profits, df_std).sum()
+    previous_index = env.current_index - MONTHS
+    if previous_index <= 0:
+        reward = env.profits.sum()
+    else:
+        previous_date = env.returns.index[previous_index]
+        current_date = env.returns.index[env.current_index]
+        df_std =  env.returns[previous_date:current_date].std()
+        df_std[df_std < 0.01] = 0.01
+        reward = np.divide(env.profits, df_std).sum()
     return reward
 
 def get_max_drawdown_reward(evn, ** kewargs):
@@ -75,6 +75,26 @@ def get_max_drawdown(env, df, period_start_date, current_date):
     return res
 
 
+def action_fund_info(env):
+    res = {}
+    for i in len(env.returns.columns):
+        res[env.returns.columns[i]] = weights[i]
+    return res
+
+
+def init_invest_df(base_df):
+    index = base_df.index
+    cloumns = base_df.columns
+    data = array([np.arange(len(index))]*len(cloumns))
+    df = pd.DataFrame(data, index=index, columns=columns)
+    return df
+
+
+def update_invest_df(df, index, val):
+    df[index] = val
+    return df
+
+
 def resample_backfill(df, rule):
     return df.apply(lambda x: 1+x).resample(rule).backfill()
 
@@ -102,6 +122,7 @@ class MarketEnv(gym.Env):
         self.reward_func_kwargs = reward_func_kwargs
         self.noise = noise
         self.state_scale = state_scale
+        self.invest_df = init_invest_df(returns)
         self.seed()
         self.reset()
 
@@ -184,6 +205,8 @@ class MarketEnv(gym.Env):
         self.weights = self.action_to_weights_func(action)
         self.episode += 1
         self.current_index += 1
+
+        self.update_invest_df(self.invest_df, )
 
         # update investments and wealth
         previous_investments = self.investments
@@ -282,4 +305,5 @@ class MarketEnv(gym.Env):
         #    'dd': self.drawdown,
         #    'episode': self.episode,
         }
+
         return info
