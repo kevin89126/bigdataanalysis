@@ -27,7 +27,8 @@ def sharpe_ratio_reward(env, **kwargs):
     # Get privious 3 months
     previous_index = env.current_index - MONTHS
     if previous_index <= 0:
-        reward = env.profits.sum()
+        raise Exception('Reward Index error')
+        #reward = env.profits.sum()
     else:
         previous_date = env.returns.index[previous_index]
         current_date = env.returns.index[env.current_index]
