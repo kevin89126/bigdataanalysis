@@ -116,7 +116,7 @@ class MarketEnv(gym.Env):
         self._init_action_space()
         self._init_observation_space()
         self.trade_pecentage = trade_pecentage
-        self.start_index, self.current_index, self.end_index = 0, 0, 0
+        self.start_index, self.current_index, self.end_index = MONTHS, 0, 0
         self.action_to_weights_func = action_to_weights_func
         self.reward_func = reward_func
         self.reward_func_kwargs = reward_func_kwargs
@@ -242,7 +242,7 @@ class MarketEnv(gym.Env):
         total_index_count = len(self.returns.index)
         last_index = total_index_count
         #if (self.trade_pecentage >= 1):
-        self.start_index = 0
+        self.start_index = MONTHS
         self.end_index = last_index - 2
         #else:
         #    self.start_index = np.random.randint(low=0, high=last_index*(1-self.trade_pecentage))
