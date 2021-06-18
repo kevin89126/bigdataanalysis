@@ -10,7 +10,7 @@ from pandas import DataFrame
 
 
 INIT_WEALTH = 1000000
-MONTHS = 3
+MONTHS = 6
 
 def proration_weights(action):
     if action.sum() == 0:
@@ -233,7 +233,7 @@ class MarketEnv(gym.Env):
 
         info = self._get_info()
         state = self._get_state()
-        return state, self.reward, done, info
+        return state, reward, done, info
 
     def render(self):
         pass
@@ -266,13 +266,14 @@ class MarketEnv(gym.Env):
         # Use profix as random noise
         #noise = np.random.normal(0, abs(self.profit), self.observation_space.shape)
 
-        noise = []
+        noises = []
         state = self.features.iloc[self.current_index].to_numpy()*self.state_scale
-        for s in state:
-            n = np.random.normal(0, abs(s/10))
-            noise.append(n)
- 
-        state = state + noise
+        if self.noise:
+            for s in state:
+                n = np.random.normal(0, abs(s/10))
+                noises.append(n)
+
+            state = state + noise
         np.clip(state, -1, 1, out=state)
         if (state.shape != self.observation_space.shape):
             raise Exception('Shape of state {state.shape} is incorrect should be {self.observation_space.shape}')

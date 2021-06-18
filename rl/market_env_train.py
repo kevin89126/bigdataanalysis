@@ -71,8 +71,8 @@ def train_model(variant):
     def post_epoch_func(self, epoch):
         progress_csv = os.path.join(log_dir, 'progress.csv')
         df = pd.read_csv(progress_csv)
-        final_kpis = ['wealths', 'reward']
-        mean_kpis = ['profit','cagr']
+        final_kpis = ['wealths']
+        mean_kpis = ['profit','cagr', 'reward']
         srcs = ['evaluation', 'exploration']
         n = 50
 
@@ -145,7 +145,7 @@ variant = dict(
         reward_scale=1000,  # Only used by SAC
     ),
     expl_env_kwargs=dict(
-        noise=0.3,
+        noise=True,
         state_scale=1,
         reward_func=sharpe_ratio_reward,
         reward_func_kwargs=dict(
@@ -157,7 +157,7 @@ variant = dict(
         trade_pecentage=0.2
     ),
     eval_env_kwargs=dict(
-        noise=0,
+        noise=False,
         state_scale=1,
         reward_func=sharpe_ratio_reward,
         reward_func_kwargs=dict(
@@ -168,7 +168,7 @@ variant = dict(
         trade_pecentage=1
     ),
     algorithm_kwargs=dict(
-        num_epochs=300,
+        num_epochs=2000,
         num_eval_steps_per_epoch=int(1000/fast_forward_scale),
         num_trains_per_train_loop=int(3000/fast_forward_scale),
         num_expl_steps_per_train_loop=int(1000/fast_forward_scale),
