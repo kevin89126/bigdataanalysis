@@ -271,10 +271,10 @@ class MarketEnv(gym.Env):
         state = self.features.iloc[self.current_index].to_numpy()*self.state_scale
         if self.noise:
             for s in state:
-                n = np.random.normal(0, abs(s/10))
+                n = np.random.normal(0, abs(s/5))
                 noises.append(n)
 
-            state = state + noise
+            state = state + noises
         np.clip(state, -1, 1, out=state)
         if (state.shape != self.observation_space.shape):
             raise Exception('Shape of state {state.shape} is incorrect should be {self.observation_space.shape}')
