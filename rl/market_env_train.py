@@ -77,12 +77,12 @@ def train_model(variant):
         n = 50
 
         for kpi in mean_kpis:
-            series = map(lambda s: df[f'{s}/env_infos/{kpi} Mean'], 'evaluation')
+            series = map(lambda s: df[f'{s}/env_infos/{kpi} Mean'], ['evaluation'])
             plot_ma(series=series, lables=srcs, title=kpi, n=n)
             plt.savefig(os.path.join(log_dir, f'evaluation_{kpi}.png'))
             plt.close()
 
-            series = map(lambda s: df[f'{s}/env_infos/{kpi} Mean'], 'exploration')
+            series = map(lambda s: df[f'{s}/env_infos/{kpi} Mean'], ['exploration'])
             plot_ma(series=series, lables=srcs, title=kpi, n=n)
             plt.savefig(os.path.join(log_dir, f'exploration_{kpi}.png'))
             plt.close()
@@ -90,12 +90,12 @@ def train_model(variant):
 
 
         for kpi in final_kpis:
-            series = map(lambda s: df[f'{s}/env_infos/final/{kpi} Mean'], 'evaluation')
+            series = map(lambda s: df[f'{s}/env_infos/final/{kpi} Mean'], ['evaluation'])
             plot_ma(series=series, lables=srcs, title=kpi, n=n)
             plt.savefig(os.path.join(log_dir, f'evaluation_{kpi}.png'))
             plt.close()
 
-            series = map(lambda s: df[f'{s}/env_infos/final/{kpi} Mean'], 'exploration')
+            series = map(lambda s: df[f'{s}/env_infos/final/{kpi} Mean'], ['exploration'])
             plot_ma(series=series, lables=srcs, title=kpi, n=n)
             plt.savefig(os.path.join(log_dir, f'exploration_{kpi}.png'))
             plt.close()
