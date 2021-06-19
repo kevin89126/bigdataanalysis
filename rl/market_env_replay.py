@@ -78,8 +78,8 @@ for src in srcs:
     df_ret_val = pd.read_csv(os.path.join(src,'df_ret_val.csv'), parse_dates=['Date'], index_col=['Date'])
     df_feature_train = pd.read_csv(os.path.join(src,'df_feature_train.csv'), parse_dates=['Date'], index_col=['Date'])
     df_feature_val = pd.read_csv(os.path.join(src,'df_feature_val.csv'), parse_dates=['Date'], index_col=['Date'])
-    df_raw_train = pd.read_csv(os.path.join(src,'df_raw_data_train.csv'), parse_dates=['Date'], index_col=['Date'])
-    df_raw_val = pd.read_csv(os.path.join(src,'df_raw_data_val.csv'), parse_dates=['Date'], index_col=['Date'])
+    df_raw_data_train = pd.read_csv(os.path.join(src,'df_raw_data_train.csv'), parse_dates=['Date'], index_col=['Date'])
+    df_raw_data_val = pd.read_csv(os.path.join(src,'df_raw_data_val.csv'), parse_dates=['Date'], index_col=['Date'])
  
     validate_split_date = Timestamp('2019-03-01')
     df_ret_val1 = df_ret_val[df_ret_val.index < validate_split_date]
@@ -98,10 +98,10 @@ for src in srcs:
     expl_env = NormalizedBoxEnv(gym.make('MarketEnv-v0', raw_data=df_raw_data_train, returns=df_ret_train, features=df_feature_train,
                                             **expl_env_kwargs))
 
-    eval_env1 = NormalizedBoxEnv(gym.make('MarketEnv-v0', raw_data=df_raw_data_train, returns=df_ret_val, features=df_feature_val,
+    eval_env1 = NormalizedBoxEnv(gym.make('MarketEnv-v0', raw_data=df_raw_data_val, returns=df_ret_val, features=df_feature_val,
                                             **eval_env_kwargs))
 
-    eval_env2 = NormalizedBoxEnv(gym.make('MarketEnv-v0', raw_data=df_raw_data_train, returns=df_ret_val, features=df_feature_val,
+    eval_env2 = NormalizedBoxEnv(gym.make('MarketEnv-v0', raw_data=df_raw_data_val, returns=df_ret_val, features=df_feature_val,
                                             **eval_env_kwargs))
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir = f"./output/replay_{timestamp}/"
