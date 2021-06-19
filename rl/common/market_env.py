@@ -30,7 +30,7 @@ RIST_TARGET_PERCENT = 0.75
 
 
 def count_cost(pre_weights, cur_weights):
-    cost = abs(pre_weights - cur_weights).sum()
+    cost = abs(pre_weights - cur_weights)
     for i in range(len(cur_weights)):
         if FUND_RISK_LIST[i]:
             # Risk fund cost 2%
