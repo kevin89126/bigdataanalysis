@@ -76,7 +76,8 @@ for src in srcs:
     trainer_kwargs = variant['trainer_kwargs']
     df_ret_train = pd.read_csv(os.path.join(src,'df_ret_train.csv'), parse_dates=['Date'], index_col=['Date'])
     df_ret_val = pd.read_csv(os.path.join(src,'df_ret_val.csv'), parse_dates=['Date'], index_col=['Date'])
-    df_feature = pd.read_csv(os.path.join(src,'df_feature.csv'), parse_dates=['Date'], index_col=['Date'])
+    df_feature_train = pd.read_csv(os.path.join(src,'df_feature_train.csv'), parse_dates=['Date'], index_col=['Date'])
+    df_feature_val = pd.read_csv(os.path.join(src,'df_feature_val.csv'), parse_dates=['Date'], index_col=['Date'])
     validate_split_date = Timestamp('2019-03-01')
     df_ret_val1 = df_ret_val[df_ret_val.index < validate_split_date]
     df_ret_val2 = df_ret_val[df_ret_val.index >= validate_split_date]
@@ -91,21 +92,26 @@ for src in srcs:
     eval_env_kwargs['reward_func_kwargs']=dict()
     
 
-    expl_env = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_train, features=df_feature,
+    expl_env = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_train, features=df_feature_train,
                                             **expl_env_kwargs))
 
-    eval_env1 = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_val1, features=df_feature,
+    eval_env1 = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_val, features=df_feature_val,
                                             **eval_env_kwargs))
 
-    eval_env2 = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_val2, features=df_feature,
+    eval_env2 = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_val, features=df_feature_val,
                                             **eval_env_kwargs))
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir = f"./output/replay_{timestamp}/"
     os.mkdir(log_dir)
-    for file in ('variant.json','df_feature.csv','df_ret_val.csv'):
+    for file in ('variant.json','df_feature_val.csv','df_ret_val.csv'):
         shutil.copyfile(os.path.join(src,file), os.path.join(log_dir,file))
-    envs = (eval_env1, 
-        eval_env2)
+
+    # Only test one env
+    #envs = (eval_env1, 
+    #    eval_env2)
+
+    envs = (eval_env1)
+
 
     id = 1
     for env in envs:
