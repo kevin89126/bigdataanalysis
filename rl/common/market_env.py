@@ -22,6 +22,7 @@ FUND_RISK_LIST = [
     True, # TW000T0718Y4
     True, # TW000T0911Y5
     True, # TW000T1110Y3
+    False,
     False
 ]
 
