@@ -12,7 +12,7 @@ import shutil
 
 from common.trainer import get_trainer
 from common.market_env import MarketEnv
-from common.finance_utility import finance_utility
+#from common.finance_utility import finance_utility
 from common.market_env import simple_return_reward, sharpe_ratio_reward
 
 from rlkit.envs.wrappers import NormalizedBoxEnv
@@ -78,6 +78,9 @@ for src in srcs:
     df_ret_val = pd.read_csv(os.path.join(src,'df_ret_val.csv'), parse_dates=['Date'], index_col=['Date'])
     df_feature_train = pd.read_csv(os.path.join(src,'df_feature_train.csv'), parse_dates=['Date'], index_col=['Date'])
     df_feature_val = pd.read_csv(os.path.join(src,'df_feature_val.csv'), parse_dates=['Date'], index_col=['Date'])
+    df_raw_train = pd.read_csv(os.path.join(src,'df_raw_data_train.csv'), parse_dates=['Date'], index_col=['Date'])
+    df_raw_val = pd.read_csv(os.path.join(src,'df_raw_data_val.csv'), parse_dates=['Date'], index_col=['Date'])
+ 
     validate_split_date = Timestamp('2019-03-01')
     df_ret_val1 = df_ret_val[df_ret_val.index < validate_split_date]
     df_ret_val2 = df_ret_val[df_ret_val.index >= validate_split_date]
@@ -85,20 +88,20 @@ for src in srcs:
  
 
     #todo should parse it from json file
-    reward_func = simple_return_reward
-    expl_env_kwargs['reward_func'] = simple_return_reward
-    expl_env_kwargs['reward_func_kwargs']=dict()
-    eval_env_kwargs['reward_func'] = simple_return_reward
-    eval_env_kwargs['reward_func_kwargs']=dict()
+    #reward_func = sharpe_ratio_reward
+    #expl_env_kwargs['reward_func'] = reward_func
+    #expl_env_kwargs['reward_func_kwargs']=dict()
+    #eval_env_kwargs['reward_func'] = reward_func
+    #eval_env_kwargs['reward_func_kwargs']=dict()
     
 
-    expl_env = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_train, features=df_feature_train,
+    expl_env = NormalizedBoxEnv(gym.make('MarketEnv-v0', raw_data=df_raw_data_train, returns=df_ret_train, features=df_feature_train,
                                             **expl_env_kwargs))
 
-    eval_env1 = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_val, features=df_feature_val,
+    eval_env1 = NormalizedBoxEnv(gym.make('MarketEnv-v0', raw_data=df_raw_data_train, returns=df_ret_val, features=df_feature_val,
                                             **eval_env_kwargs))
 
-    eval_env2 = NormalizedBoxEnv(gym.make('MarketEnv-v0', returns=df_ret_val, features=df_feature_val,
+    eval_env2 = NormalizedBoxEnv(gym.make('MarketEnv-v0', raw_data=df_raw_data_train, returns=df_ret_val, features=df_feature_val,
                                             **eval_env_kwargs))
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir = f"./output/replay_{timestamp}/"
