@@ -350,7 +350,7 @@ class MarketEnv(gym.Env):
         #    'mean_square': self.mean_square,
             'mdd': self.max_drawdown,
             'profit': self.profit,
-            'reward': self.reward,
+            'reward': reward,
         #    'date': current_date,
         #    'dd': self.drawdown,
         #    'episode': self.episode,
