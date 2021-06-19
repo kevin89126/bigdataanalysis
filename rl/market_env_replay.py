@@ -23,9 +23,9 @@ import rlkit.torch.pytorch_util as ptu
 
 def get_module_func(func_path):
     func_name = func_path.split('.')[-1]
-    module_name = fund_path.strip('.' + func_name)
+    module_name = func_path.strip('.' + func_name)
     module = import_module(module_name)
-    return getattr(module, funn_name)
+    return getattr(module, func_name)
 
 
 def get_unwrapped_env(env):
