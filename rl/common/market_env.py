@@ -349,7 +349,7 @@ class MarketEnv(gym.Env):
             'mdd': self.max_drawdown,
             'profit': self.profit,
             'reward': self.reward,
-            'date': current_date,
+        #    'date': current_date,
         #    'dd': self.drawdown,
         #    'episode': self.episode,
         }
