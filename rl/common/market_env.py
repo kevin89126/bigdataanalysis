@@ -272,6 +272,7 @@ class MarketEnv(gym.Env):
         reward = self.reward_func(self,**self.reward_func_kwargs)
         #self.rewards.append(reward)
         #self.reward = sum(self.rewards)
+        self.reward = reward
 
         # MaxDrawdown
         self.max_weath = max(self.wealth, self.max_weath)
@@ -350,7 +351,7 @@ class MarketEnv(gym.Env):
         #    'mean_square': self.mean_square,
             'mdd': self.max_drawdown,
             'profit': self.profit,
-            'reward': reward,
+            'reward': self.reward,
         #    'date': current_date,
         #    'dd': self.drawdown,
         #    'episode': self.episode,
