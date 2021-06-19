@@ -297,7 +297,7 @@ class MarketEnv(gym.Env):
         self.max_drawdown = max(self.max_drawdown, self.drawdown)
 
         # Save weights
-        self.previous_weights = self.weights
+        self.pre_weights = self.weights
 
         info = self._get_info()
         state = self._get_state()
@@ -329,7 +329,7 @@ class MarketEnv(gym.Env):
         self.profit = 0
         self.rewards = []
         self.reward = 0
-        self.previous_weights = np.zeros(self.investments_count)
+        self.pre_weights = np.zeros(self.investments_count)
         return self._get_state()
 
     def _get_state(self):
