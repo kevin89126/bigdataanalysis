@@ -9,6 +9,7 @@ import json
 import colorsys
 import common
 import shutil
+from  importlib import import_module
 
 from common.trainer import get_trainer
 from common.market_env import MarketEnv
@@ -18,6 +19,13 @@ from common.market_env import simple_return_reward, sharpe_ratio_reward
 from rlkit.envs.wrappers import NormalizedBoxEnv
 from rlkit.torch.sac.policies import MakeDeterministic
 import rlkit.torch.pytorch_util as ptu
+
+
+def get_import_func(func_path):
+    func_name = func_path.split('.')[-1]
+    module_name = fund_path.strip('.' + func_name)
+    module = import_module(module_name)
+    return getattr(module, funn_name)
 
 
 def get_unwrapped_env(env):
@@ -89,9 +97,9 @@ for src in srcs:
 
     #todo should parse it from json file
     #reward_func = sharpe_ratio_reward
-    #expl_env_kwargs['reward_func'] = reward_func
+    expl_env_kwargs['reward_func'] = get_module_func(expl_env_kwargs['reward_func']['$function'])
     #expl_env_kwargs['reward_func_kwargs']=dict()
-    #eval_env_kwargs['reward_func'] = reward_func
+    eval_env_kwargs['reward_func'] = get_module_func(eval_env_kwargs['reward_func']['$function'])
     #eval_env_kwargs['reward_func_kwargs']=dict()
     
 
@@ -113,7 +121,7 @@ for src in srcs:
     #envs = (eval_env1, 
     #    eval_env2)
 
-    envs = (eval_env1)
+    envs = [eval_env1]
 
 
     id = 1

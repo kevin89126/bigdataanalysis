@@ -261,6 +261,7 @@ class MarketEnv(gym.Env):
         self.episode = 0
         self.profit = 0
         self.rewards = []
+        self.reward = 0
         return self._get_state()
 
     def _get_state(self):
@@ -306,6 +307,7 @@ class MarketEnv(gym.Env):
         #    'mdd': self.max_drawdown,
             'profit': self.profit,
             'reward': self.reward,
+            'date': current_date,
         #    'dd': self.drawdown,
         #    'episode': self.episode,
         }
