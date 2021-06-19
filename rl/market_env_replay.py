@@ -21,7 +21,7 @@ from rlkit.torch.sac.policies import MakeDeterministic
 import rlkit.torch.pytorch_util as ptu
 
 
-def get_import_func(func_path):
+def get_module_func(func_path):
     func_name = func_path.split('.')[-1]
     module_name = fund_path.strip('.' + func_name)
     module = import_module(module_name)
