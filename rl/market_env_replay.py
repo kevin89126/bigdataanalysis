@@ -55,8 +55,8 @@ ptu.set_gpu_mode(True)
 
 #src = r'C:\Users\Woody\Documents\git repository\nccu-thesis\code\output\train_out_20210502_230851'
 srcs=(
-    r"./output/DDPG_IID_TAU_0",
-    r"./output/DDPG_NIID_TAU_0"
+    r"./output/train_out_epoch_2000",
+    #r"./output/DDPG_NIID_TAU_0"
     #r"./output/DDPG_NIID_TAU_0"
     #r"./output/DDPG_IID",
     #r"./output/DDPG_NIID",
