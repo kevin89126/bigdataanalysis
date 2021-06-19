@@ -26,7 +26,18 @@ FUND_RISK_LIST = [
     False
 ]
 
-RIST_TARGET_PERCENT = 0.3
+RIST_TARGET_PERCENT = 0.75
+
+
+def count_cost(pre_weights, cur_weights):
+    cost = abs(pre_weights - cur_weights).sum()
+    for i in range(len(cur_weights)):
+        if FUND_RISK_LIST[i]:
+            # Risk fund cost 2%
+            cost[i] = cost[i] * 0.02
+        else:
+            cost[i] = cost[i] * 0.01
+    return cost.sum()
 
 
 def proration_weights(action):
@@ -48,6 +59,10 @@ def proration_risk_weights(action):
         else:
             total_unrisk_weights = total_unrisk_weights + action[i]
 
+    # Return if the aciont is satisfied
+    if total_risk_weights <= RIST_TARGET_PERCENT:
+        return action
+
     # Rebalance Risk weights
     # new_unrisk_percent = unrisk * unrisk_target_percent / total_unrisk_weights
     for i in range(len(action)):
@@ -68,6 +83,8 @@ def simple_return_reward(env, **kwargs):
 def sharpe_ratio_reward(env, **kwargs):
     # Get privious 3 months
     previous_index = env.current_index - MONTHS
+    # Cost painty
+    cost = get_cost(env.pre_weights, env.weights)
     if previous_index <= 0:
         raise Exception('Reward Index error')
         #reward = env.profits.sum()
@@ -76,7 +93,7 @@ def sharpe_ratio_reward(env, **kwargs):
         current_date = env.returns.index[env.current_index]
         df_std =  env.returns[previous_date:current_date].std()
         df_std[df_std < 0.01] = 0.01
-        reward = np.divide(env.profits, df_std).sum()
+        reward = np.divide(env.profits - cost, df_std).sum()
     return reward
 
 def get_max_drawdown_reward(evn, ** kewargs):
@@ -279,6 +296,9 @@ class MarketEnv(gym.Env):
         self.drawdown = max(0, (self.max_weath - self.wealth) / self.max_weath)
         self.max_drawdown = max(self.max_drawdown, self.drawdown)
 
+        # Save weights
+        self.previous_weights = self.weights
+
         info = self._get_info()
         state = self._get_state()
         return state, reward, done, info
@@ -309,6 +329,7 @@ class MarketEnv(gym.Env):
         self.profit = 0
         self.rewards = []
         self.reward = 0
+        self.previous_weights = np.zeros(self.investments_count)
         return self._get_state()
 
     def _get_state(self):
