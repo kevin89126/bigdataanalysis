@@ -84,7 +84,7 @@ def sharpe_ratio_reward(env, **kwargs):
     # Get privious 3 months
     previous_index = env.current_index - MONTHS
     # Cost painty
-    cost = get_cost(env.pre_weights, env.weights)
+    cost = count_cost(env.pre_weights, env.weights)
     if previous_index <= 0:
         raise Exception('Reward Index error')
         #reward = env.profits.sum()
