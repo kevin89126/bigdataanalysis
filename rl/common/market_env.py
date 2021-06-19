@@ -9,13 +9,48 @@ from random import uniform
 from pandas import DataFrame
 
 
-INIT_WEALTH = 1000000
+INIT_WEALTH = 1
 MONTHS = 6
+
+# If FUND_LIST is considered as RISK or not
+FUND_RISK_LIST = [
+    False,
+    False,
+    True, # TW000T0716Y8
+    True, # TW000T0708Y5
+    False,
+    True, # TW000T0718Y4
+    True, # TW000T0911Y5
+    True, # TW000T1110Y3
+    False
+]
+
+RIST_TARGET_PERCENT = 0.3
+
 
 def proration_weights(action):
     if action.sum() == 0:
         action = np.random.rand(*action.shape)
     return action / action.sum()
+
+def proration_risk_weights(action):
+    if action.sum() == 0:
+        action = np.random.rand(*action.shape)
+    action = action / action.sum()
+    for i in range(len(action)):
+        if FUND_RISK_LIST[i]:
+            total_risk_weights = total_risk_weights + action[i] 
+        else:
+            total_unrisk_weights = total_unrisk_weights + action[i]
+
+    # Rebalance Risk weights
+    # new_unrisk_percent = unrisk * unrisk_target_percent / total_unrisk_weights
+    for i in range(len(action)):
+        if FUND_RISK_LIST[i]:
+            action[i] = action[i] * (1-RIST_TARGET_PERCENT) / total_unrisk_weights
+        else:
+            action[i] = action[i] * RIST_TARGET_PERCENT / total_risk_weights
+    return action
 
 
 def simple_return_reward(env, **kwargs):
@@ -107,7 +142,6 @@ def resample_relative_changes(df, rule):
 class MarketEnv(gym.Env):
 
     def __init__(self, raw_data: DataFrame, returns: DataFrame, features: DataFrame, show_info=False, trade_freq='days',
-                 action_to_weights_func=proration_weights,
                  reward_func=simple_return_reward,
                  reward_func_kwargs=dict(),
                  noise=0,
@@ -118,7 +152,7 @@ class MarketEnv(gym.Env):
         self._init_observation_space()
         self.trade_pecentage = trade_pecentage
         self.start_index, self.current_index, self.end_index = MONTHS, 0, 0
-        self.action_to_weights_func = action_to_weights_func
+        self.action_to_weights_func = proration_risk_weights
         self.reward_func = reward_func
         self.reward_func_kwargs = reward_func_kwargs
         self.noise = noise
@@ -216,7 +250,7 @@ class MarketEnv(gym.Env):
         target_investments = self.weights
 
         # Investment
-        invest_wealth = round(self.wealth * 0.8)
+        #invest_wealth = round(self.wealth * 0.8)
 
         # Get profit
         inv_return = self.returns.iloc[self.current_index]
@@ -229,8 +263,13 @@ class MarketEnv(gym.Env):
 
         # Return reward
         reward = self.reward_func(self,**self.reward_func_kwargs)
-        self.rewards.append(reward)
-        self.reward = sum(self.rewards)
+        #self.rewards.append(reward)
+        #self.reward = sum(self.rewards)
+
+        # MaxDrawdown
+        self.max_weath = max(self.wealth, self.max_weath)
+        self.drawdown = max(0, (self.max_weath - self.wealth) / self.max_weath)
+        self.max_drawdown = max(self.max_drawdown, self.drawdown)
 
         info = self._get_info()
         state = self._get_state()
@@ -284,10 +323,8 @@ class MarketEnv(gym.Env):
     def _get_info(self):
         start_date = self.returns.index[self.start_index]
         current_date = self.returns.index[self.current_index]
-        #trade_days = (current_date-start_date).days
-        # TODO
-        # Monthly profit use 12 instead of 365?
-        cagr = math.pow(1 + self.profit, 12) - 1
+        trade_days = (current_date-start_date).days
+        cagr = math.pow(self.wealth, 365/trade_days) - 1
         if (self.episode == 1):
             std = 0
         else:
@@ -304,7 +341,7 @@ class MarketEnv(gym.Env):
         #    'std': std,
         #    'mean': self.mean,
         #    'mean_square': self.mean_square,
-        #    'mdd': self.max_drawdown,
+            'mdd': self.max_drawdown,
             'profit': self.profit,
             'reward': self.reward,
             'date': current_date,
