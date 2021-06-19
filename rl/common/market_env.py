@@ -37,6 +37,10 @@ def proration_risk_weights(action):
     if action.sum() == 0:
         action = np.random.rand(*action.shape)
     action = action / action.sum()
+
+    # Get risk and unrisk total percent
+    total_risk_weights = 0
+    total_unrisk_weights = 0
     for i in range(len(action)):
         if FUND_RISK_LIST[i]:
             total_risk_weights = total_risk_weights + action[i] 
