@@ -37,7 +37,7 @@ def count_cost(pre_weights, cur_weights):
             cost[i] = cost[i] * 0.02
         else:
             cost[i] = cost[i] * 0.01
-    return cost.sum()
+    return cost
 
 
 def proration_weights(action):
