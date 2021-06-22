@@ -30,7 +30,7 @@ RIST_TARGET_PERCENT = 0.75
 
 
 def count_cost(pre_weights, cur_weights):
-    cost = abs(pre_weights - cur_weights)
+    cost = abs(cur_weights - pre_weights)
     for i in range(len(cur_weights)):
         if FUND_RISK_LIST[i]:
             # Risk fund cost 2%
@@ -67,9 +67,9 @@ def proration_risk_weights(action):
     # new_unrisk_percent = unrisk * unrisk_target_percent / total_unrisk_weights
     for i in range(len(action)):
         if FUND_RISK_LIST[i]:
-            action[i] = action[i] * RIST_TARGET_PERCENT / total_unrisk_weights
+            action[i] = action[i] * RIST_TARGET_PERCENT / total_risk_weights
         else:
-            action[i] = action[i] * (1-RIST_TARGET_PERCENT) / total_risk_weights
+            action[i] = action[i] * (1-RIST_TARGET_PERCENT) / total_unrisk_weights
     # Make sum of action to 1
     action[-1] = action[-1] + (1 - action.sum())
     return action

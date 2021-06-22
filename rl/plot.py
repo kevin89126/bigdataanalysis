@@ -5,12 +5,11 @@ from common.matplotlib_extend import plot_ma
 from constants import EPOCH, FINAL_KPIS, MEAN_KPIS
 
 
-def post_epoch_func(log_dir):
+def post_epoch_func(log_dir, n):
     progress_csv = os.path.join(log_dir, 'progress.csv')
     df = pd.read_csv(progress_csv)
     final_kpis = FINAL_KPIS
     mean_kpis = MEAN_KPIS
-    n = 50
 
     for kpi in mean_kpis:
         series = map(lambda s: df[f'{s}/env_infos/{kpi} Mean'], ['evaluation'])

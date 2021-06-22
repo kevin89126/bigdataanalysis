@@ -25,6 +25,7 @@ FUND_NUMBER = 10
 EPOCH = 350
 FINAL_KPIS = ['wealths', 'cagr', 'mdd']
 MEAN_KPIS = ['profit', 'reward']
+ENABLE_EPOCH_PLOT = False
 
 # The real start date is BEGIN_DATE_FOR_TEST + MONTHS 
 BEGIN_DATE_FOR_TEST = '2018-07-01'

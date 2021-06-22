@@ -19,7 +19,7 @@ from rlkit.torch.torch_rl_algorithm import TorchBatchRLAlgorithm
 import gtimer as gt
 
 from constants import TRAIN_DATA, VALIDATE_DATA, FEATURE_TRAIN_DATA, FEATURE_VALIDATE_DATA, RAW_TRAIN_DATA, \
-    RAW_VALIDATE_DATA, TRAIN_LOG_PATH, EPOCH, FINAL_KPIS, MEAN_KPIS
+    RAW_VALIDATE_DATA, TRAIN_LOG_PATH, EPOCH, FINAL_KPIS, MEAN_KPIS, ENABLE_EPOCH_PLOT
 
 def load_dataset():
     # Get data path
@@ -42,12 +42,11 @@ def load_dataset():
 
 
 gym.envs.register(id='MarketEnv-v0', entry_point='common.market_env:MarketEnv', max_episode_steps=1000)
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+log_dir = LOG_PATH.format(timestamp)
 
 def train_model(variant):
     gt.reset_root() 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = LOG_PATH.format(timestamp)
-
     setup_logger('name-of-experiment', variant=variant,
              snapshot_mode='gap_and_last', snapshot_gap=20, log_dir=log_dir)
 
@@ -69,6 +68,8 @@ def train_model(variant):
                                          **eval_env_kwargs))
 
     def post_epoch_func(self, epoch):
+        if not ENABLE_EPOCH_PLOT:
+            return
         progress_csv = os.path.join(log_dir, 'progress.csv')
         df = pd.read_csv(progress_csv)
         final_kpis = FINAL_KPIS
@@ -178,4 +179,6 @@ variant = dict(
 )
 
 train_model(variant)
-
+if not ENABLE_EPHCH_PLOT:
+    from plot import post_epoch_func
+    post_epoch_func(log_dir, 50)
