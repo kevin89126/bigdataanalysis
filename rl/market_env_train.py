@@ -43,7 +43,7 @@ def load_dataset():
 
 gym.envs.register(id='MarketEnv-v0', entry_point='common.market_env:MarketEnv', max_episode_steps=1000)
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-log_dir = LOG_PATH.format(timestamp)
+log_dir = TRAIN_LOG_PATH.format(timestamp)
 
 def train_model(variant):
     gt.reset_root() 
@@ -181,4 +181,5 @@ variant = dict(
 train_model(variant)
 if not ENABLE_EPHCH_PLOT:
     from plot import post_epoch_func
-    post_epoch_func(log_dir, 50)
+    from constants import PLOT_AVG_POINTS
+    post_epoch_func(log_dir, PLOT_AVG_POINTS)
