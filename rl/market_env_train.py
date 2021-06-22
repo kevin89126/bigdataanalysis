@@ -179,7 +179,7 @@ variant = dict(
 )
 
 train_model(variant)
-if not ENABLE_EPHCH_PLOT:
+if not ENABLE_EPOCH_PLOT:
     from plot import post_epoch_func
     from constants import PLOT_AVG_POINTS
     post_epoch_func(log_dir, PLOT_AVG_POINTS)
