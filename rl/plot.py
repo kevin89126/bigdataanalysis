@@ -5,7 +5,7 @@ from common.matplotlib_extend import plot_ma
 from constants import EPOCH, FINAL_KPIS, MEAN_KPIS
 
 
-def post_epoch_func(epoch, log_dir):
+def post_epoch_func(log_dir):
     progress_csv = os.path.join(log_dir, 'progress.csv')
     df = pd.read_csv(progress_csv)
     final_kpis = FINAL_KPIS
@@ -38,5 +38,4 @@ def post_epoch_func(epoch, log_dir):
 
 if __name__ == "__main__":
     LOG_DIR = ""
-    for i in range(EPOCH):
-        post_epoch_func(i, LOG_DIR)
+    post_epoch_func(LOG_DIR)
