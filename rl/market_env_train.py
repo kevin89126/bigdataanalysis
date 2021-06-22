@@ -19,7 +19,7 @@ from rlkit.torch.torch_rl_algorithm import TorchBatchRLAlgorithm
 import gtimer as gt
 
 from constants import TRAIN_DATA, VALIDATE_DATA, FEATURE_TRAIN_DATA, FEATURE_VALIDATE_DATA, RAW_TRAIN_DATA, \
-    RAW_VALIDATE_DATA
+    RAW_VALIDATE_DATA, TRAIN_LOG_PATH, EPOCH
 
 def load_dataset():
     # Get data path
@@ -46,7 +46,7 @@ gym.envs.register(id='MarketEnv-v0', entry_point='common.market_env:MarketEnv', 
 def train_model(variant):
     gt.reset_root() 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = f"./output/train_out_{timestamp}/"
+    log_dir = LOG_PATH.format(timestamp)
 
     setup_logger('name-of-experiment', variant=variant,
              snapshot_mode='gap_and_last', snapshot_gap=20, log_dir=log_dir)
@@ -168,7 +168,7 @@ variant = dict(
         trade_pecentage=1
     ),
     algorithm_kwargs=dict(
-        num_epochs=2000,
+        num_epochs=EPOCH,
         num_eval_steps_per_epoch=int(1000/fast_forward_scale),
         num_trains_per_train_loop=int(3000/fast_forward_scale),
         num_expl_steps_per_train_loop=int(1000/fast_forward_scale),

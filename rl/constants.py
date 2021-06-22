@@ -7,6 +7,10 @@ FEATURE_VALIDATE_DATA = FOLDER + 'features_validation.csv'
 RAW_TRAIN_DATA = FOLDER + 'raw_train.csv'
 RAW_VALIDATE_DATA = FOLDER + 'raw_validation.csv'
 
+# Log
+BASE_LOG_PATH = "./output"
+TRAIN_LOG_PATH = BASE_LOG_PATH + "/train_out_{0}/"
+
 # Source data
 FUND_FEATURES = FOLDER + 'features_2.csv'
 FILES = ['Fund_RT_Monthly.csv']
@@ -18,6 +22,7 @@ NEWS_DATA = FOLDER + 'news_predict.csv'
 
 # FUND DATA
 FUND_NUMBER = 10
+EPOCH = 350
 
 # The real start date is BEGIN_DATE_FOR_TEST + MONTHS 
 BEGIN_DATE_FOR_TEST = '2018-07-01'
