@@ -19,7 +19,7 @@ from rlkit.torch.torch_rl_algorithm import TorchBatchRLAlgorithm
 import gtimer as gt
 
 from constants import TRAIN_DATA, VALIDATE_DATA, FEATURE_TRAIN_DATA, FEATURE_VALIDATE_DATA, RAW_TRAIN_DATA, \
-    RAW_VALIDATE_DATA, TRAIN_LOG_PATH, EPOCH
+    RAW_VALIDATE_DATA, TRAIN_LOG_PATH, EPOCH, FINAL_KPIS, MEAN_KPIS
 
 def load_dataset():
     # Get data path
@@ -71,9 +71,8 @@ def train_model(variant):
     def post_epoch_func(self, epoch):
         progress_csv = os.path.join(log_dir, 'progress.csv')
         df = pd.read_csv(progress_csv)
-        final_kpis = ['wealths', 'cagr', 'mdd']
-        mean_kpis = ['profit', 'reward']
-        srcs = ['evaluation', 'exploration']
+        final_kpis = FINAL_KPIS
+        mean_kpis = MEAN_KPIS
         n = 50
 
         for kpi in mean_kpis:
