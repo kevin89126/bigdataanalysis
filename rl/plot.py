@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from common.matplotlib_extend import plot_ma
-from constants import EPOCH, FINAL_KPIS, MEAN_KPIS
+from constants import EPOCH, FINAL_KPIS, MEAN_KPIS, PLOT_AVG_POINTS
 
 
 def post_epoch_func(log_dir, n):
@@ -37,4 +37,4 @@ def post_epoch_func(log_dir, n):
 
 if __name__ == "__main__":
     LOG_DIR = ""
-    post_epoch_func(LOG_DIR)
+    post_epoch_func(LOG_DIR, PLOT_AVG_POINTS)

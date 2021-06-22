@@ -22,7 +22,7 @@ NEWS_DATA = FOLDER + 'news_predict.csv'
 
 # FUND DATA
 FUND_NUMBER = 10
-EPOCH = 350
+EPOCH = 1500
 FINAL_KPIS = ['wealths', 'cagr', 'mdd']
 MEAN_KPIS = ['profit', 'reward']
 
