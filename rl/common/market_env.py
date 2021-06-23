@@ -355,9 +355,11 @@ class MarketEnv(gym.Env):
         trade_days = (current_date-start_date).days
 
         tmp_wealth = self.wealth
+        cagr = 0
         if self.wealth <= 0:
             tmp_wealth = 0
-        cagr = math.pow(tmp_wealth, 365/trade_days) - 1
+        if trade_days != 0:
+            cagr = math.pow(tmp_wealth, 365/trade_days) - 1
         if (self.episode == 1):
             std = 0
         else:
